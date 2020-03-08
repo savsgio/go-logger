@@ -4,6 +4,7 @@ go-logger
 [![Build Status](https://travis-ci.org/savsgio/go-logger.svg?branch=master)](https://travis-ci.org/savsgio/go-logger)
 [![Coverage Status](https://coveralls.io/repos/github/savsgio/go-logger/badge.svg?branch=master)](https://coveralls.io/github/savsgio/go-logger?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/savsgio/go-logger)](https://goreportcard.com/report/github.com/savsgio/go-logger)
+[![GoDev](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/github.com/savsgio/go-logger)
 [![GitHub release](https://img.shields.io/github/release/savsgio/go-logger.svg)](https://github.com/savsgio/go-logger/releases)
 
 Lighweight wrapper for oficial Golang Log to adds support of levels for the log and reduce extra-allocations to zero.
