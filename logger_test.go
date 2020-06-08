@@ -27,7 +27,9 @@ func TestLogger_isStd(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
+	for _, tt := range tests {
+		test := tt
+
 		t.Run(test.name, func(t *testing.T) {
 			if got := test.l.isStd(); got != test.want {
 				t.Errorf("Logger.isStd() = %v, want %v", got, test.want)
@@ -40,6 +42,7 @@ func TestLogger_checkLevel(t *testing.T) {
 	type args struct {
 		level int
 	}
+
 	tests := []struct {
 		name string
 		l    *Logger
@@ -77,7 +80,9 @@ func TestLogger_checkLevel(t *testing.T) {
 			want: true,
 		},
 	}
-	for _, test := range tests {
+	for _, tt := range tests {
+		test := tt
+
 		t.Run(test.name, func(t *testing.T) {
 			if got := test.l.checkLevel(test.args.level); got != test.want {
 				t.Errorf("Logger.checkLevel() = %v, want %v", got, test.want)
@@ -111,7 +116,9 @@ func TestLogger_writePrefix(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
+	for _, tt := range tests {
+		test := tt
+
 		t.Run(test.name, func(t *testing.T) {
 			buff := bytebufferpool.Get()
 			defer bytebufferpool.Put(buff)
@@ -143,12 +150,13 @@ func TestLogger_output(t *testing.T) {
 	output := &bytes.Buffer{}
 	l := New("test", DEBUG, output)
 
-	l.output(test.args.prefix, test.args.msg)
+	if err := l.output(test.args.prefix, test.args.msg); err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
 
 	if got := output.String(); !strings.HasSuffix(got, test.want) {
 		t.Errorf("Logger.output() = %v, want: %v", got, test.want)
 	}
-
 }
 
 func TestLogger_outputf(t *testing.T) {
@@ -169,18 +177,21 @@ func TestLogger_outputf(t *testing.T) {
 	output := &bytes.Buffer{}
 	l := New("test", DEBUG, output)
 
-	l.outputf(test.args.prefix, test.args.msg, test.args.v...)
+	if err := l.outputf(test.args.prefix, test.args.msg, test.args.v...); err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
 
 	if got := output.String(); !strings.HasSuffix(got, test.want) {
 		t.Errorf("Logger.outputf() = %v, want: %v", got, test.want)
 	}
 }
 
-func TestLogger_SetLevel(t *testing.T) {
+func TestLogger_SetLevel(t *testing.T) { // nolint:funlen
 	type args struct {
 		level    string
 		intLevel int
 	}
+
 	tests := []struct {
 		name     string
 		args     args
@@ -224,7 +235,10 @@ func TestLogger_SetLevel(t *testing.T) {
 			getPanic: true,
 		},
 	}
-	for _, test := range tests {
+
+	for _, tt := range tests {
+		test := tt
+
 		t.Run(test.name, func(t *testing.T) {
 			defer func() {
 				r := recover()
@@ -246,10 +260,11 @@ func TestLogger_SetLevel(t *testing.T) {
 	}
 }
 
-func TestLogger_LevelEnabled(t *testing.T) {
+func TestLogger_LevelEnabled(t *testing.T) { // nolint:funlen
 	type args struct {
 		level string
 	}
+
 	type want struct {
 		fatalEnabled   bool
 		errorEnabled   bool
@@ -257,7 +272,8 @@ func TestLogger_LevelEnabled(t *testing.T) {
 		infoEnabled    bool
 		debugEnabled   bool
 	}
-	tests := []struct {
+
+	tests := []struct { // nolint:dupl
 		name string
 		args args
 		want want
@@ -318,7 +334,9 @@ func TestLogger_LevelEnabled(t *testing.T) {
 			},
 		},
 	}
-	for _, test := range tests {
+	for _, tt := range tests {
+		test := tt
+
 		t.Run(test.name, func(t *testing.T) {
 			l := New("test", FATAL, os.Stderr)
 			l.SetLevel(test.args.level)
@@ -362,7 +380,7 @@ func TestLogger_SetOutput(t *testing.T) {
 	}
 }
 
-func TestLogger_Error(t *testing.T) {
+func TestLogger_Error(t *testing.T) { // nolint:dupl
 	type args struct {
 		msg []interface{}
 	}
@@ -386,7 +404,9 @@ func TestLogger_Error(t *testing.T) {
 			want:    "- not - ERROR - Msg with not std\n",
 		},
 	}
-	for _, test := range tests {
+	for _, tt := range tests {
+		test := tt
+
 		t.Run(test.name, func(t *testing.T) {
 			output := &bytes.Buffer{}
 			New(test.logName, ERROR, output).Error(test.args.msg...)
@@ -394,7 +414,6 @@ func TestLogger_Error(t *testing.T) {
 			if got := output.String(); !strings.HasSuffix(got, test.want) {
 				t.Errorf("Logger.Error() = %v, want %v", got, test.want)
 			}
-
 		})
 	}
 }
@@ -424,7 +443,10 @@ func TestLogger_Errorf(t *testing.T) {
 			want:    "- not - ERROR - Msg with not std\n",
 		},
 	}
-	for _, test := range tests {
+
+	for _, tt := range tests {
+		test := tt
+
 		t.Run(test.name, func(t *testing.T) {
 			output := &bytes.Buffer{}
 			New(test.logName, INFO, output).Errorf(test.args.msg, test.args.v...)
@@ -432,12 +454,11 @@ func TestLogger_Errorf(t *testing.T) {
 			if got := output.String(); !strings.HasSuffix(got, test.want) {
 				t.Errorf("Logger.Errorf() = %v, want %v", got, test.want)
 			}
-
 		})
 	}
 }
 
-func TestLogger_Warning(t *testing.T) {
+func TestLogger_Warning(t *testing.T) { // nolint:dupl
 	type args struct {
 		msg []interface{}
 	}
@@ -461,7 +482,9 @@ func TestLogger_Warning(t *testing.T) {
 			want:    "- not - WARNING - Msg with not std\n",
 		},
 	}
-	for _, test := range tests {
+	for _, tt := range tests {
+		test := tt
+
 		t.Run(test.name, func(t *testing.T) {
 			output := &bytes.Buffer{}
 			New(test.logName, WARNING, output).Warning(test.args.msg...)
@@ -469,7 +492,6 @@ func TestLogger_Warning(t *testing.T) {
 			if got := output.String(); !strings.HasSuffix(got, test.want) {
 				t.Errorf("Logger.Warning() = %v, want %v", got, test.want)
 			}
-
 		})
 	}
 }
@@ -499,7 +521,9 @@ func TestLogger_Warningf(t *testing.T) {
 			want:    "- not - WARNING - Msg with not std\n",
 		},
 	}
-	for _, test := range tests {
+	for _, tt := range tests {
+		test := tt
+
 		t.Run(test.name, func(t *testing.T) {
 			output := &bytes.Buffer{}
 			New(test.logName, INFO, output).Warningf(test.args.msg, test.args.v...)
@@ -507,12 +531,11 @@ func TestLogger_Warningf(t *testing.T) {
 			if got := output.String(); !strings.HasSuffix(got, test.want) {
 				t.Errorf("Logger.Warningf() = %v, want %v", got, test.want)
 			}
-
 		})
 	}
 }
 
-func TestLogger_Info(t *testing.T) {
+func TestLogger_Info(t *testing.T) { // nolint:dupl
 	type args struct {
 		msg []interface{}
 	}
@@ -536,7 +559,9 @@ func TestLogger_Info(t *testing.T) {
 			want:    "- not - INFO - Msg with not std\n",
 		},
 	}
-	for _, test := range tests {
+	for _, tt := range tests {
+		test := tt
+
 		t.Run(test.name, func(t *testing.T) {
 			output := &bytes.Buffer{}
 			New(test.logName, INFO, output).Info(test.args.msg...)
@@ -544,7 +569,6 @@ func TestLogger_Info(t *testing.T) {
 			if got := output.String(); !strings.HasSuffix(got, test.want) {
 				t.Errorf("Logger.Info() = %v, want %v", got, test.want)
 			}
-
 		})
 	}
 }
@@ -574,7 +598,9 @@ func TestLogger_Infof(t *testing.T) {
 			want:    "- not - INFO - Msg with not std\n",
 		},
 	}
-	for _, test := range tests {
+	for _, tt := range tests {
+		test := tt
+
 		t.Run(test.name, func(t *testing.T) {
 			output := &bytes.Buffer{}
 			New(test.logName, INFO, output).Infof(test.args.msg, test.args.v...)
@@ -586,7 +612,7 @@ func TestLogger_Infof(t *testing.T) {
 	}
 }
 
-func TestLogger_Debug(t *testing.T) {
+func TestLogger_Debug(t *testing.T) { // nolint:dupl
 	type args struct {
 		msg []interface{}
 	}
@@ -610,7 +636,9 @@ func TestLogger_Debug(t *testing.T) {
 			want:    "- not - DEBUG - Msg with not std\n",
 		},
 	}
-	for _, test := range tests {
+	for _, tt := range tests {
+		test := tt
+
 		t.Run(test.name, func(t *testing.T) {
 			output := &bytes.Buffer{}
 			New(test.logName, DEBUG, output).Debug(test.args.msg...)
@@ -618,7 +646,6 @@ func TestLogger_Debug(t *testing.T) {
 			if got := output.String(); !strings.HasSuffix(got, test.want) {
 				t.Errorf("Logger.Debug() = %v, want %v", got, test.want)
 			}
-
 		})
 	}
 }
@@ -648,7 +675,9 @@ func TestLogger_Debugf(t *testing.T) {
 			want:    "- not - DEBUG - Msg with not std\n",
 		},
 	}
-	for _, test := range tests {
+	for _, tt := range tests {
+		test := tt
+
 		t.Run(test.name, func(t *testing.T) {
 			output := &bytes.Buffer{}
 			New(test.logName, DEBUG, output).Debugf(test.args.msg, test.args.v...)
@@ -656,12 +685,11 @@ func TestLogger_Debugf(t *testing.T) {
 			if got := output.String(); !strings.HasSuffix(got, test.want) {
 				t.Errorf("Logger.Debugf() = %v, want %v", got, test.want)
 			}
-
 		})
 	}
 }
 
-func TestLogger_Print(t *testing.T) {
+func TestLogger_Print(t *testing.T) { // nolint:dupl
 	type args struct {
 		msg []interface{}
 	}
@@ -685,7 +713,9 @@ func TestLogger_Print(t *testing.T) {
 			want:    "- not - Msg with not std\n",
 		},
 	}
-	for _, test := range tests {
+	for _, tt := range tests {
+		test := tt
+
 		t.Run(test.name, func(t *testing.T) {
 			output := &bytes.Buffer{}
 			New(test.logName, DEBUG, output).Print(test.args.msg...)
@@ -693,7 +723,6 @@ func TestLogger_Print(t *testing.T) {
 			if got := output.String(); !strings.HasSuffix(got, test.want) {
 				t.Errorf("Logger.Print() = %v, want %v", got, test.want)
 			}
-
 		})
 	}
 }
@@ -723,7 +752,9 @@ func TestLogger_Printf(t *testing.T) {
 			want:    "Msg with not std\n",
 		},
 	}
-	for _, test := range tests {
+	for _, tt := range tests {
+		test := tt
+
 		t.Run(test.name, func(t *testing.T) {
 			output := &bytes.Buffer{}
 			New(test.logName, DEBUG, output).Printf(test.args.msg, test.args.v...)
@@ -731,17 +762,18 @@ func TestLogger_Printf(t *testing.T) {
 			if got := output.String(); !strings.HasSuffix(got, test.want) {
 				t.Errorf("Logger.Printf() = %v, want %v", got, test.want)
 			}
-
 		})
 	}
 }
 
 // Benchmarks
+
 func Benchmark_Printf(b *testing.B) {
 	output := &bytes.Buffer{}
 	log := New("test", DEBUG, output)
 
 	b.ResetTimer()
+
 	for i := 0; i <= b.N; i++ {
 		log.Printf("Test %s", "params")
 	}
@@ -752,6 +784,7 @@ func Benchmark_Errorf(b *testing.B) {
 	log := New("test", DEBUG, output)
 
 	b.ResetTimer()
+
 	for i := 0; i <= b.N; i++ {
 		log.Errorf("Test %s", "params")
 	}
@@ -762,6 +795,7 @@ func Benchmark_Warningf(b *testing.B) {
 	log := New("test", DEBUG, output)
 
 	b.ResetTimer()
+
 	for i := 0; i <= b.N; i++ {
 		log.Warningf("Test %s", "params")
 	}
@@ -772,6 +806,7 @@ func Benchmark_Infof(b *testing.B) {
 	log := New("test", DEBUG, output)
 
 	b.ResetTimer()
+
 	for i := 0; i <= b.N; i++ {
 		log.Infof("Test %s", "params")
 	}
@@ -782,6 +817,7 @@ func Benchmark_Debugf(b *testing.B) {
 	log := New("test", DEBUG, output)
 
 	b.ResetTimer()
+
 	for i := 0; i <= b.N; i++ {
 		log.Debugf("Test %s", "params")
 	}

@@ -16,10 +16,11 @@ func TestStd_SetLevel(t *testing.T) {
 	}
 }
 
-func TestStd_LevelEnabled(t *testing.T) {
+func TestStd_LevelEnabled(t *testing.T) { // nolint:funlen
 	type args struct {
 		level string
 	}
+
 	type want struct {
 		fatalEnabled   bool
 		errorEnabled   bool
@@ -27,7 +28,8 @@ func TestStd_LevelEnabled(t *testing.T) {
 		infoEnabled    bool
 		debugEnabled   bool
 	}
-	tests := []struct {
+
+	tests := []struct { // nolint:dupl
 		name string
 		args args
 		want want
@@ -88,7 +90,9 @@ func TestStd_LevelEnabled(t *testing.T) {
 			},
 		},
 	}
-	for _, test := range tests {
+	for _, tt := range tests {
+		test := tt
+
 		t.Run(test.name, func(t *testing.T) {
 			SetLevel(test.args.level)
 
@@ -132,12 +136,14 @@ func TestStd_SetOutput(t *testing.T) {
 
 func TestStdErrorAndErrorf(t *testing.T) {
 	output := new(bytes.Buffer)
+
 	SetLevel(ERROR)
 	SetOutput(output)
 
 	t.Run("Error", func(t *testing.T) {
 		Error("Error msg")
-		if len(output.Bytes()) <= 0 {
+
+		if len(output.Bytes()) == 0 {
 			t.Error("Error() test failed")
 		}
 		output.Reset()
@@ -145,7 +151,8 @@ func TestStdErrorAndErrorf(t *testing.T) {
 
 	t.Run("Errorf", func(t *testing.T) {
 		Errorf("Error msg with %s", "params")
-		if len(output.Bytes()) <= 0 {
+
+		if len(output.Bytes()) == 0 {
 			t.Error("Error() test failed")
 		}
 		output.Reset()
@@ -154,12 +161,14 @@ func TestStdErrorAndErrorf(t *testing.T) {
 
 func TestStdWarningAndWarningf(t *testing.T) {
 	output := new(bytes.Buffer)
+
 	SetLevel(WARNING)
 	SetOutput(output)
 
 	t.Run("Warning", func(t *testing.T) {
 		Warning("Warning msg")
-		if len(output.Bytes()) <= 0 {
+
+		if len(output.Bytes()) == 0 {
 			t.Error("Warning() test failed")
 		}
 		output.Reset()
@@ -167,7 +176,8 @@ func TestStdWarningAndWarningf(t *testing.T) {
 
 	t.Run("Warningf", func(t *testing.T) {
 		Warningf("Warning msg with %s", "params")
-		if len(output.Bytes()) <= 0 {
+
+		if len(output.Bytes()) == 0 {
 			t.Error("Warningf() test failed")
 		}
 		output.Reset()
@@ -176,12 +186,14 @@ func TestStdWarningAndWarningf(t *testing.T) {
 
 func TestStdInfoAndInfof(t *testing.T) {
 	output := new(bytes.Buffer)
+
 	SetLevel(INFO)
 	SetOutput(output)
 
 	t.Run("Info", func(t *testing.T) {
 		Info("Info msg")
-		if len(output.Bytes()) <= 0 {
+
+		if len(output.Bytes()) == 0 {
 			t.Error("Info() test failed")
 		}
 		output.Reset()
@@ -189,7 +201,8 @@ func TestStdInfoAndInfof(t *testing.T) {
 
 	t.Run("Infof", func(t *testing.T) {
 		Infof("Info msg with %s", "params")
-		if len(output.Bytes()) <= 0 {
+
+		if len(output.Bytes()) == 0 {
 			t.Error("Infof() test failed")
 		}
 		output.Reset()
@@ -198,12 +211,14 @@ func TestStdInfoAndInfof(t *testing.T) {
 
 func TestStdDebugAndDebugf(t *testing.T) {
 	output := new(bytes.Buffer)
+
 	SetLevel(DEBUG)
 	SetOutput(output)
 
 	t.Run("Debug", func(t *testing.T) {
 		Debug("Debug msg")
-		if len(output.Bytes()) <= 0 {
+
+		if len(output.Bytes()) == 0 {
 			t.Error("Debug() test failed")
 		}
 		output.Reset()
@@ -211,7 +226,8 @@ func TestStdDebugAndDebugf(t *testing.T) {
 
 	t.Run("Debugf", func(t *testing.T) {
 		Debugf("Debug msg with %s", "params")
-		if len(output.Bytes()) <= 0 {
+
+		if len(output.Bytes()) == 0 {
 			t.Error("Debugf() test failed")
 		}
 		output.Reset()
@@ -220,12 +236,13 @@ func TestStdDebugAndDebugf(t *testing.T) {
 
 func TestStdPrintAndPrintf(t *testing.T) {
 	output := new(bytes.Buffer)
+
 	SetLevel(DEBUG)
 	SetOutput(output)
 
 	t.Run("Print", func(t *testing.T) {
 		Print("Print msg")
-		if len(output.Bytes()) <= 0 {
+		if len(output.Bytes()) == 0 {
 			t.Error("Print() test failed")
 		}
 		output.Reset()
@@ -233,7 +250,7 @@ func TestStdPrintAndPrintf(t *testing.T) {
 
 	t.Run("Printf", func(t *testing.T) {
 		Printf("Print msg with %s", "params")
-		if len(output.Bytes()) <= 0 {
+		if len(output.Bytes()) == 0 {
 			t.Error("Printf() test failed")
 		}
 		output.Reset()
