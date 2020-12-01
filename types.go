@@ -19,8 +19,3 @@ type Logger struct {
 	infoEnabled    bool
 	debugEnabled   bool
 }
-
-type msgBuffer interface {
-	SetString(s string)
-	WriteString(s string) (int, error)
-}

@@ -29,7 +29,7 @@ func (l *Logger) checkLevel(level int) bool {
 }
 
 // Get complete prefix if name of the logger isn't 'std'.
-func (l *Logger) writePrefix(buff msgBuffer, prefix string) {
+func (l *Logger) writePrefix(buff *bytebufferpool.ByteBuffer, prefix string) {
 	buff.SetString("- ")
 
 	if !l.isStd() {
