@@ -25,19 +25,19 @@ go get github.com/savsgio/go-logger
 
 ## Supported Go versions:
 
-- 1.10.x
-- 1.11.x
-- 1.12.x
-- 1.13.x
+- 1.15.x
 - 1.14.x
+- 1.13.x
+- 1.12.x
+- 1.11.x
 
 ## Benchmarks
 ```
-Benchmark_Printf-8       3000000               399 ns/op              67 B/op          0 allocs/op
-Benchmark_Errorf-8       3000000               479 ns/op             158 B/op          0 allocs/op
-Benchmark_Warningf-8     3000000               458 ns/op             160 B/op          0 allocs/op
-Benchmark_Infof-8        3000000               467 ns/op             156 B/op          0 allocs/op
-Benchmark_Debugf-8       3000000               459 ns/op             158 B/op          0 allocs/op
+Benchmark_Printf-12              3526083               335 ns/op             124 B/op          0 allocs/op
+Benchmark_Errorf-12              3443049               375 ns/op             137 B/op          0 allocs/op
+Benchmark_Warningf-12            3712971               317 ns/op             129 B/op          0 allocs/op
+Benchmark_Infof-12               3668157               316 ns/op             128 B/op          0 allocs/op
+Benchmark_Debugf-12              3719518               317 ns/op             127 B/op          0 allocs/op
 ```
 
 ## Levels:
