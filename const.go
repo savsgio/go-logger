@@ -4,20 +4,26 @@ const stdName = "std"
 
 const calldepth = 2
 
-const fatalLevel = 0
-const errorLevel = 1
-const warningLevel = 2
-const infoLevel = 3
-const debugLevel = 4
+const (
+	fatalLevel = iota
+	errorLevel
+	warningLevel
+	infoLevel
+	debugLevel
+)
 
-const fatalPrefix = "FATAL"
-const errorPrefix = "ERROR"
-const warningPrefix = "WARNING"
-const infoPrefix = "INFO"
-const debugPrefix = "DEBUG"
+const (
+	fatalPrefix   = "FATAL"
+	errorPrefix   = "ERROR"
+	warningPrefix = "WARNING"
+	infoPrefix    = "INFO"
+	debugPrefix   = "DEBUG"
+)
 
-const FATAL = "fatal"
-const ERROR = "error"
-const WARNING = "warning"
-const INFO = "info"
-const DEBUG = "debug"
+const (
+	FATAL   = "fatal"
+	ERROR   = "error"
+	WARNING = "warning"
+	INFO    = "info"
+	DEBUG   = "debug"
+)
