@@ -2,6 +2,7 @@ package logger
 
 import (
 	"bytes"
+	"log"
 	"os"
 	"strings"
 	"testing"
@@ -377,6 +378,17 @@ func TestLogger_SetOutput(t *testing.T) {
 
 	if l.out != output {
 		t.Errorf("Logger.SetOutput() = %v, want %v", l.out, output)
+	}
+}
+
+func TestLogger_SetFlags(t *testing.T) {
+	flags := log.Ldate | log.Ltime | log.Llongfile
+
+	l := New("std", DEBUG, os.Stdout)
+	l.SetFlags(flags)
+
+	if l.flag != flags {
+		t.Errorf("Logger.SetLogFlags() = %v, want %v", l.flag, flags)
 	}
 }
 
