@@ -99,7 +99,7 @@ func (l *Logger) SetOutput(output io.Writer) {
 	l.instance.SetOutput(output)
 }
 
-// SetLogFlags sets the output flags for the logger
+// SetLogFlags sets the output flags for the logger.
 func (l *Logger) SetFlags(flag int) {
 	l.mu.Lock()
 	l.flag = flag
