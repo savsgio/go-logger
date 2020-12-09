@@ -12,6 +12,7 @@ type Logger struct {
 	level    int
 	out      io.Writer
 	instance *log.Logger
+	flag     int
 
 	fatalEnabled   bool
 	errorEnabled   bool

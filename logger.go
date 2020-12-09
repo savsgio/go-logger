@@ -99,6 +99,15 @@ func (l *Logger) SetOutput(output io.Writer) {
 	l.instance.SetOutput(output)
 }
 
+// SetLogFlags sets the output flags for the logger
+func (l *Logger) SetFlags(flag int) {
+	l.mu.Lock()
+	l.flag = flag
+	l.mu.Unlock()
+
+	l.instance.SetFlags(flag)
+}
+
 func (l *Logger) FatalEnabled() bool {
 	return l.fatalEnabled
 }

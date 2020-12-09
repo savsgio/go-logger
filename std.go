@@ -15,6 +15,10 @@ func SetOutput(output io.Writer) {
 	std.SetOutput(output)
 }
 
+func SetFlags(flag int) {
+	std.SetFlags(flag)
+}
+
 func FatalEnabled() bool {
 	return std.FatalEnabled()
 }

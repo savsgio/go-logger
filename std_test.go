@@ -2,6 +2,7 @@ package logger
 
 import (
 	"bytes"
+	"log"
 	"reflect"
 	"testing"
 )
@@ -131,6 +132,15 @@ func TestStd_SetOutput(t *testing.T) {
 
 	if !reflect.DeepEqual(std.out, output) {
 		t.Errorf("Logger.SetOutput() = %p, want %p", std.out, output)
+	}
+}
+
+func TestStd_SetFlags(t *testing.T) {
+	flags := log.Ldate | log.Ltime | log.Llongfile
+	SetFlags(flags)
+
+	if !reflect.DeepEqual(std.flag, flags) {
+		t.Errorf("Logger.SetOutput() = %d, want %d", std.flag, flags)
 	}
 }
 
