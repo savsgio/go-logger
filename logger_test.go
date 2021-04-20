@@ -392,6 +392,42 @@ func TestLogger_SetFlags(t *testing.T) {
 	}
 }
 
+func TestLogger_CallDepth(t *testing.T) {
+	tests := []struct {
+		name    string
+		logName string
+		flags   int
+		want    string
+	}{
+		{
+			name:    "Standar",
+			logName: "std",
+			flags:   log.Lshortfile,
+			want:    "logger_test.go",
+		},
+		{
+			name:    "Not Standar",
+			logName: "not",
+			flags:   log.Lshortfile,
+			want:    "logger_test.go",
+		},
+	}
+	for _, tt := range tests {
+		test := tt
+
+		t.Run(test.name, func(t *testing.T) {
+			output := &bytes.Buffer{}
+			l := New(test.logName, DEBUG, output)
+			l.SetFlags(test.flags)
+			l.Print("Calldepth path test")
+
+			if got := output.String(); !strings.HasPrefix(got, test.want) {
+				t.Errorf("Logger.Print() = %v, want to start with %v", got, test.want)
+			}
+		})
+	}
+}
+
 func TestLogger_Error(t *testing.T) { // nolint:dupl
 	type args struct {
 		msg []interface{}
