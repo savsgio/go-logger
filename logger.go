@@ -50,7 +50,7 @@ func (l *Logger) output(prefix string, msg ...interface{}) error {
 	l.writePrefix(buff, prefix)
 	fmt.Fprint(buff, msg...)
 
-	return l.instance.Output(calldepth, buff.String())
+	return l.instance.Output(calldepth, buff.String()) // nolint:wrapcheck
 }
 
 func (l *Logger) outputf(prefix string, msg string, v ...interface{}) error {
@@ -60,7 +60,7 @@ func (l *Logger) outputf(prefix string, msg string, v ...interface{}) error {
 	l.writePrefix(buff, prefix)
 	fmt.Fprintf(buff, msg, v...)
 
-	return l.instance.Output(calldepth, buff.String())
+	return l.instance.Output(calldepth, buff.String()) // nolint:wrapcheck
 }
 
 // SetLevel set level of log.
