@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"log"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -142,6 +143,21 @@ func TestStd_SetFlags(t *testing.T) {
 	if !reflect.DeepEqual(std.flag, flags) {
 		t.Errorf("Logger.SetOutput() = %d, want %d", std.flag, flags)
 	}
+}
+
+func TestStdCallDepth(t *testing.T) {
+	output := new(bytes.Buffer)
+
+	SetFlags(log.Lshortfile)
+	SetOutput(output)
+
+	Print("Calldepth path test")
+
+	if got := output.String(); !strings.HasPrefix(got, "std.go") {
+		t.Errorf("Logger.Print() = %v, want to start with std.go", got)
+	}
+
+	output.Reset()
 }
 
 func TestStdErrorAndErrorf(t *testing.T) {
