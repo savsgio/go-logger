@@ -52,11 +52,11 @@ func (l *Logger) SetLevel(level string) {
 		panic(fmt.Sprintf("Invalid log level, only can use {%s|%s|%s|%s|%s}", FATAL, ERROR, WARNING, INFO, DEBUG))
 	}
 
-	l.options.fatalEnabled = l.checkLevel(fatalLevel)
-	l.options.errorEnabled = l.checkLevel(errorLevel)
-	l.options.warningEnabled = l.checkLevel(warningLevel)
-	l.options.infoEnabled = l.checkLevel(infoLevel)
-	l.options.debugEnabled = l.checkLevel(debugLevel)
+	l.fatalEnabled = l.checkLevel(fatalLevel)
+	l.errorEnabled = l.checkLevel(errorLevel)
+	l.warningEnabled = l.checkLevel(warningLevel)
+	l.infoEnabled = l.checkLevel(infoLevel)
+	l.debugEnabled = l.checkLevel(debugLevel)
 
 	l.encoder.SetOptions(l.options)
 }
@@ -95,7 +95,7 @@ func (l *Logger) SetEncoder(enc Encoder) {
 }
 
 func (l *Logger) FatalEnabled() bool {
-	return l.options.fatalEnabled
+	return l.fatalEnabled
 }
 
 func (l *Logger) Fatal(msg ...interface{}) {
@@ -109,7 +109,7 @@ func (l *Logger) Fatalf(msg string, args ...interface{}) {
 }
 
 func (l *Logger) ErrorEnabled() bool {
-	return l.options.errorEnabled
+	return l.errorEnabled
 }
 
 func (l *Logger) Error(msg ...interface{}) {
@@ -125,7 +125,7 @@ func (l *Logger) Errorf(msg string, args ...interface{}) {
 }
 
 func (l *Logger) WarningEnabled() bool {
-	return l.options.warningEnabled
+	return l.warningEnabled
 }
 
 func (l *Logger) Warning(msg ...interface{}) {
@@ -141,7 +141,7 @@ func (l *Logger) Warningf(msg string, args ...interface{}) {
 }
 
 func (l *Logger) InfoEnabled() bool {
-	return l.options.infoEnabled
+	return l.infoEnabled
 }
 
 func (l *Logger) Info(msg ...interface{}) {
@@ -157,7 +157,7 @@ func (l *Logger) Infof(msg string, args ...interface{}) {
 }
 
 func (l *Logger) DebugEnabled() bool {
-	return l.options.debugEnabled
+	return l.debugEnabled
 }
 
 func (l *Logger) Debug(msg ...interface{}) {

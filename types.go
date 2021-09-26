@@ -13,6 +13,12 @@ type Logger struct {
 	options Options
 
 	encoder Encoder
+
+	fatalEnabled   bool
+	errorEnabled   bool
+	warningEnabled bool
+	infoEnabled    bool
+	debugEnabled   bool
 }
 
 type Options struct {
@@ -22,12 +28,6 @@ type Options struct {
 	TimeMicroseconds bool
 	Shortfile        bool
 	Longfile         bool
-
-	fatalEnabled   bool
-	errorEnabled   bool
-	warningEnabled bool
-	infoEnabled    bool
-	debugEnabled   bool
 }
 
 type Encoder interface {
