@@ -5,62 +5,31 @@ import (
 	"io"
 	"log"
 	"os"
-
-	"github.com/valyala/bytebufferpool"
 )
 
 // New create new instance of Logger.
 func New(name string, level string, output io.Writer) *Logger {
-	l := &Logger{name: name, out: output}
-	l.instance = log.New(output, "", log.LstdFlags)
+	enc := NewEncoderText()
 
+	l := new(Logger)
+	l.name = name
+
+	l.SetEncoder(enc)
 	l.SetLevel(level)
+	l.SetFlags(log.LstdFlags)
+	l.SetOutput(output)
 
 	return l
 }
 
-func (l *Logger) isStd() bool {
-	return l.name == stdName
+func (l *Logger) encode(level, msg string, args []interface{}) {
+	l.mu.RLock()
+	l.encoder.Encode(level, msg, args) // nolint:errcheck
+	l.mu.RUnlock()
 }
 
-// Check level to make print or not.
 func (l *Logger) checkLevel(level int) bool {
 	return l.level >= level
-}
-
-// Get complete prefix if name of the logger isn't 'std'.
-func (l *Logger) writePrefix(buff *bytebufferpool.ByteBuffer, prefix string) {
-	buff.SetString("- ")
-
-	if !l.isStd() {
-		buff.WriteString(l.name) // nolint:errcheck
-		buff.WriteString(" - ")  // nolint:errcheck
-	}
-
-	if prefix != "" {
-		buff.WriteString(prefix) // nolint:errcheck
-		buff.WriteString(" - ")  // nolint:errcheck
-	}
-}
-
-func (l *Logger) output(prefix string, msg ...interface{}) error {
-	buff := bytebufferpool.Get()
-	defer bytebufferpool.Put(buff)
-
-	l.writePrefix(buff, prefix)
-	fmt.Fprint(buff, msg...)
-
-	return l.instance.Output(calldepth, buff.String()) // nolint:wrapcheck
-}
-
-func (l *Logger) outputf(prefix string, msg string, v ...interface{}) error {
-	buff := bytebufferpool.Get()
-	defer bytebufferpool.Put(buff)
-
-	l.writePrefix(buff, prefix)
-	fmt.Fprintf(buff, msg, v...)
-
-	return l.instance.Output(calldepth, buff.String()) // nolint:wrapcheck
 }
 
 // SetLevel set level of log.
@@ -83,113 +52,130 @@ func (l *Logger) SetLevel(level string) {
 		panic(fmt.Sprintf("Invalid log level, only can use {%s|%s|%s|%s|%s}", FATAL, ERROR, WARNING, INFO, DEBUG))
 	}
 
-	l.fatalEnabled = l.checkLevel(fatalLevel)
-	l.errorEnabled = l.checkLevel(errorLevel)
-	l.warningEnabled = l.checkLevel(warningLevel)
-	l.infoEnabled = l.checkLevel(infoLevel)
-	l.debugEnabled = l.checkLevel(debugLevel)
-}
+	l.options.fatalEnabled = l.checkLevel(fatalLevel)
+	l.options.errorEnabled = l.checkLevel(errorLevel)
+	l.options.warningEnabled = l.checkLevel(warningLevel)
+	l.options.infoEnabled = l.checkLevel(infoLevel)
+	l.options.debugEnabled = l.checkLevel(debugLevel)
 
-// SetOutput set output of log.
-func (l *Logger) SetOutput(output io.Writer) {
-	l.mu.Lock()
-	l.out = output
-	l.mu.Unlock()
-
-	l.instance.SetOutput(output)
+	l.encoder.SetOptions(l.options)
 }
 
 // SetLogFlags sets the output flags for the logger.
 func (l *Logger) SetFlags(flag int) {
 	l.mu.Lock()
-	l.flag = flag
-	l.mu.Unlock()
 
-	l.instance.SetFlags(flag)
+	l.options.UTC = flag&log.LUTC != 0
+	l.options.Date = flag&log.Ldate != 0
+	l.options.Time = flag&log.Ltime != 0
+	l.options.TimeMicroseconds = flag&log.Lmicroseconds != 0
+	l.options.Shortfile = flag&log.Lshortfile != 0
+	l.options.Longfile = flag&log.Llongfile != 0
+
+	l.encoder.SetOptions(l.options)
+
+	l.mu.Unlock()
+}
+
+// SetOutput set output of log.
+func (l *Logger) SetOutput(output io.Writer) {
+	l.mu.Lock()
+	l.output = output
+	l.encoder.SetOutput(output)
+	l.mu.Unlock()
+}
+
+// SetOutput set output of log.
+func (l *Logger) SetEncoder(enc Encoder) {
+	l.mu.Lock()
+	l.encoder = enc
+	l.encoder.SetOutput(l.output)
+	l.encoder.SetOptions(l.options)
+	l.mu.Unlock()
 }
 
 func (l *Logger) FatalEnabled() bool {
-	return l.fatalEnabled
+	return l.options.fatalEnabled
 }
 
 func (l *Logger) Fatal(msg ...interface{}) {
-	l.output(fatalPrefix, msg...) // nolint:errcheck
+	l.encode(fatalPrefix, "", msg)
 	os.Exit(1)
 }
 
-func (l *Logger) Fatalf(msg string, v ...interface{}) {
-	l.outputf(fatalPrefix, msg, v...) // nolint:errcheck
+func (l *Logger) Fatalf(msg string, args ...interface{}) {
+	l.encode(fatalPrefix, msg, args)
 	os.Exit(1)
 }
 
 func (l *Logger) ErrorEnabled() bool {
-	return l.errorEnabled
+	return l.options.errorEnabled
 }
 
 func (l *Logger) Error(msg ...interface{}) {
 	if l.ErrorEnabled() {
-		l.output(errorPrefix, msg...) // nolint:errcheck
+		l.encode(errorPrefix, "", msg)
 	}
 }
 
-func (l *Logger) Errorf(msg string, v ...interface{}) {
+func (l *Logger) Errorf(msg string, args ...interface{}) {
 	if l.ErrorEnabled() {
-		l.outputf(errorPrefix, msg, v...) // nolint:errcheck
+		l.encode(errorPrefix, msg, args)
 	}
 }
 
 func (l *Logger) WarningEnabled() bool {
-	return l.warningEnabled
+	return l.options.warningEnabled
 }
 
 func (l *Logger) Warning(msg ...interface{}) {
 	if l.WarningEnabled() {
-		l.output(warningPrefix, msg...) // nolint:errcheck
+		l.encode(warningPrefix, "", msg)
 	}
 }
 
-func (l *Logger) Warningf(msg string, v ...interface{}) {
+func (l *Logger) Warningf(msg string, args ...interface{}) {
 	if l.WarningEnabled() {
-		l.outputf(warningPrefix, msg, v...) // nolint:errcheck
+		l.encode(warningPrefix, msg, args)
 	}
 }
 
 func (l *Logger) InfoEnabled() bool {
-	return l.infoEnabled
+	return l.options.infoEnabled
 }
 
 func (l *Logger) Info(msg ...interface{}) {
 	if l.InfoEnabled() {
-		l.output(infoPrefix, msg...) // nolint:errcheck
+		l.encode(infoPrefix, "", msg)
 	}
 }
 
-func (l *Logger) Infof(msg string, v ...interface{}) {
+func (l *Logger) Infof(msg string, args ...interface{}) {
 	if l.InfoEnabled() {
-		l.outputf(infoPrefix, msg, v...) // nolint:errcheck
+		l.encode(infoPrefix, msg, args)
 	}
 }
 
 func (l *Logger) DebugEnabled() bool {
-	return l.debugEnabled
+	return l.options.debugEnabled
 }
 
 func (l *Logger) Debug(msg ...interface{}) {
 	if l.DebugEnabled() {
-		l.output(debugPrefix, msg...) // nolint:errcheck
+		l.encode(debugPrefix, "", msg)
 	}
 }
 
-func (l *Logger) Debugf(msg string, v ...interface{}) {
+func (l *Logger) Debugf(msg string, args ...interface{}) {
 	if l.DebugEnabled() {
-		l.outputf(debugPrefix, msg, v...) // nolint:errcheck
+		l.encode(debugPrefix, msg, args)
 	}
 }
 
 func (l *Logger) Print(msg ...interface{}) {
-	l.output("", msg...) // nolint:errcheck
+	l.encode("", "", msg)
 }
 
-func (l *Logger) Printf(msg string, v ...interface{}) {
-	l.outputf("", msg, v...) // nolint:errcheck
+func (l *Logger) Printf(msg string, args ...interface{}) {
+	l.encode("", msg, args)
 }

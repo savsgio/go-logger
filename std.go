@@ -5,18 +5,22 @@ import (
 	"os"
 )
 
-var std = New(stdName, INFO, os.Stderr)
+var std = New("", INFO, os.Stderr)
 
 func SetLevel(level string) {
 	std.SetLevel(level)
+}
+
+func SetFlags(flag int) {
+	std.SetFlags(flag)
 }
 
 func SetOutput(output io.Writer) {
 	std.SetOutput(output)
 }
 
-func SetFlags(flag int) {
-	std.SetFlags(flag)
+func SetEncoder(enc Encoder) {
+	std.SetEncoder(enc)
 }
 
 func FatalEnabled() bool {
@@ -27,8 +31,8 @@ func Fatal(msg ...interface{}) {
 	std.Fatal(msg...)
 }
 
-func Fatalf(msg string, v ...interface{}) {
-	std.Fatalf(msg, v...)
+func Fatalf(msg string, args ...interface{}) {
+	std.Fatalf(msg, args...)
 }
 
 func ErrorEnabled() bool {
@@ -39,8 +43,8 @@ func Error(msg ...interface{}) {
 	std.Error(msg...)
 }
 
-func Errorf(msg string, v ...interface{}) {
-	std.Errorf(msg, v...)
+func Errorf(msg string, args ...interface{}) {
+	std.Errorf(msg, args...)
 }
 
 func WarningEnabled() bool {
@@ -51,8 +55,8 @@ func Warning(msg ...interface{}) {
 	std.Warning(msg...)
 }
 
-func Warningf(msg string, v ...interface{}) {
-	std.Warningf(msg, v...)
+func Warningf(msg string, args ...interface{}) {
+	std.Warningf(msg, args...)
 }
 
 func InfoEnabled() bool {
@@ -63,8 +67,8 @@ func Info(msg ...interface{}) {
 	std.Info(msg...)
 }
 
-func Infof(msg string, v ...interface{}) {
-	std.Infof(msg, v...)
+func Infof(msg string, args ...interface{}) {
+	std.Infof(msg, args...)
 }
 
 func DebugEnabled() bool {
@@ -75,14 +79,14 @@ func Debug(msg ...interface{}) {
 	std.Debug(msg...)
 }
 
-func Debugf(msg string, v ...interface{}) {
-	std.Debugf(msg, v...)
+func Debugf(msg string, args ...interface{}) {
+	std.Debugf(msg, args...)
 }
 
 func Print(msg ...interface{}) {
 	std.Print(msg...)
 }
 
-func Printf(msg string, v ...interface{}) {
-	std.Printf(msg, v...)
+func Printf(msg string, args ...interface{}) {
+	std.Printf(msg, args...)
 }

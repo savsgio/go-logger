@@ -1,8 +1,6 @@
 package logger
 
-const stdName = "std"
-
-const calldepth = 3
+const calldepth = 6
 
 const (
 	fatalLevel = iota
