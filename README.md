@@ -25,12 +25,12 @@ go get github.com/savsgio/go-logger
 
 ## Supported Go versions:
 
+- 1.17.x
 - 1.16.x
 - 1.15.x
 - 1.14.x
 - 1.13.x
 - 1.12.x
-- 1.11.x
 
 ## Benchmarks
 ```
