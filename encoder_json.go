@@ -25,7 +25,7 @@ func (enc *EncoderJSON) SetOptions(opts Options) {
 		buf.WriteString("\",") // nolint:errcheck
 	}
 
-	enc.fieldsEncoded = buf.String()
+	enc.EncoderBase.fieldsEncoded = buf.String()
 
 	bytebufferpool.Put(buf)
 }
@@ -66,7 +66,7 @@ func (enc *EncoderJSON) Encode(level, msg string, args []interface{}) error {
 	buf.WriteString(level)          // nolint:errcheck
 	buf.WriteString("\",")          // nolint:errcheck
 
-	buf.WriteString(enc.fieldsEncoded) // nolint:errcheck
+	buf.WriteString(enc.EncoderBase.fieldsEncoded) // nolint:errcheck
 
 	buf.WriteString("\"msg\":\"") // nolint:errcheck
 	enc.WriteMessage(buf, msg, args)

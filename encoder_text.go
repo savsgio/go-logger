@@ -24,7 +24,7 @@ func (enc *EncoderText) SetOptions(opts Options) {
 		buf.WriteString(" - ") // nolint:errcheck
 	}
 
-	enc.fieldsEncoded = buf.String()
+	enc.EncoderBase.fieldsEncoded = buf.String()
 
 	bytebufferpool.Put(buf)
 }
@@ -61,7 +61,7 @@ func (enc *EncoderText) Encode(level, msg string, args []interface{}) error {
 	buf.WriteString(level) // nolint:errcheck
 	buf.WriteString(" - ") // nolint:errcheck
 
-	buf.WriteString(enc.fieldsEncoded) // nolint:errcheck
+	buf.WriteString(enc.EncoderBase.fieldsEncoded) // nolint:errcheck
 
 	enc.WriteMessage(buf, msg, args)
 	enc.WriteNewLine(buf)
