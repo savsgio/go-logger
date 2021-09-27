@@ -5,9 +5,24 @@ import (
 	"os"
 )
 
-var std = New("", INFO, os.Stderr)
+var std = newStd()
 
-func SetLevel(level string) {
+func newStd() *Logger {
+	l := New("", INFO, os.Stderr)
+	l.setCalldepth(calldepth + 1)
+
+	return l
+}
+
+func WithFields(fields ...Field) *Logger {
+	return std.WithFields(fields...)
+}
+
+func SetFields(fields ...Field) {
+	std.SetFields(fields...)
+}
+
+func SetLevel(level Level) {
 	std.SetLevel(level)
 }
 

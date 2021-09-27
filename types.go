@@ -7,11 +7,10 @@ import (
 
 type Logger struct {
 	mu      sync.RWMutex // ensures atomic writes; protects the following fields
-	name    string
-	level   int
+	level   Level
+	flag    int
 	output  io.Writer
 	options Options
-
 	encoder Encoder
 
 	fatalEnabled   bool
@@ -21,13 +20,23 @@ type Logger struct {
 	debugEnabled   bool
 }
 
+type Level int
+
+type Field struct {
+	Key   string
+	Value interface{}
+}
+
 type Options struct {
+	Fields           []Field
 	UTC              bool
 	Date             bool
 	Time             bool
 	TimeMicroseconds bool
 	Shortfile        bool
 	Longfile         bool
+
+	calldepth int
 }
 
 type Encoder interface {
@@ -39,6 +48,8 @@ type Encoder interface {
 type EncoderBase struct {
 	output io.Writer
 	opts   Options
+
+	fieldsEncoded string
 }
 
 type EncoderText struct {

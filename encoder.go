@@ -21,7 +21,7 @@ func (enc *EncoderBase) SetOptions(opts Options) {
 func (enc *EncoderBase) GetCaller() (string, int) {
 	pc := make([]uintptr, 1)
 
-	numFrames := runtime.Callers(calldepth+1, pc)
+	numFrames := runtime.Callers(enc.opts.calldepth, pc)
 	if numFrames < 1 {
 		return "???", 0
 	}
@@ -99,6 +99,14 @@ func (enc *EncoderBase) WriteFileCaller(buf *bytebufferpool.ByteBuffer) {
 	buf.WriteString(file) // nolint:errcheck
 	buf.WriteByte(':')    // nolint:errcheck
 	buf.B = strconv.AppendInt(buf.B, int64(line), 10)
+}
+
+func (enc *EncoderBase) WriteInterface(buf *bytebufferpool.ByteBuffer, value interface{}) {
+	if str, ok := value.(string); ok {
+		buf.WriteString(str) // nolint:errcheck
+	} else {
+		fmt.Fprint(buf, value)
+	}
 }
 
 func (enc *EncoderBase) WriteMessage(buf *bytebufferpool.ByteBuffer, msg string, args []interface{}) {

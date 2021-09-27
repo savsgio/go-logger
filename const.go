@@ -3,25 +3,18 @@ package logger
 const calldepth = 6
 
 const (
-	fatalLevel = iota
-	errorLevel
-	warningLevel
-	infoLevel
-	debugLevel
+	INVALID Level = iota - 1
+	FATAL
+	ERROR
+	WARNING
+	INFO
+	DEBUG
 )
 
 const (
-	fatalPrefix   = "FATAL"
-	errorPrefix   = "ERROR"
-	warningPrefix = "WARNING"
-	infoPrefix    = "INFO"
-	debugPrefix   = "DEBUG"
-)
-
-const (
-	FATAL   = "fatal"
-	ERROR   = "error"
-	WARNING = "warning"
-	INFO    = "info"
-	DEBUG   = "debug"
+	fatalLevelStr   = "FATAL"
+	errorLevelStr   = "ERROR"
+	warningLevelStr = "WARNING"
+	infoLevelStr    = "INFO"
+	debugLevelStr   = "DEBUG"
 )

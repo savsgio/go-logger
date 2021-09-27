@@ -10,6 +10,26 @@ func NewEncoderJSON() *EncoderJSON {
 	return new(EncoderJSON)
 }
 
+func (enc *EncoderJSON) SetOptions(opts Options) {
+	enc.EncoderBase.SetOptions(opts)
+
+	buf := bytebufferpool.Get()
+
+	for i := range enc.opts.Fields {
+		field := enc.opts.Fields[i]
+
+		buf.WriteString("\"")      // nolint:errcheck
+		buf.WriteString(field.Key) // nolint:errcheck
+		buf.WriteString("\":\"")   // nolint:errcheck
+		enc.WriteInterface(buf, field.Value)
+		buf.WriteString("\",") // nolint:errcheck
+	}
+
+	enc.fieldsEncoded = buf.String()
+
+	bytebufferpool.Put(buf)
+}
+
 func (enc *EncoderJSON) Encode(level, msg string, args []interface{}) error {
 	now := time.Now()
 	if enc.opts.UTC {
@@ -42,9 +62,13 @@ func (enc *EncoderJSON) Encode(level, msg string, args []interface{}) error {
 		buf.WriteString("\",") // nolint:errcheck
 	}
 
-	buf.WriteString("\"level\":\"")  // nolint:errcheck
-	buf.WriteString(level)           // nolint:errcheck
-	buf.WriteString("\",\"msg\":\"") // nolint:errcheck
+	buf.WriteString("\"level\":\"") // nolint:errcheck
+	buf.WriteString(level)          // nolint:errcheck
+	buf.WriteString("\",")          // nolint:errcheck
+
+	buf.WriteString(enc.fieldsEncoded) // nolint:errcheck
+
+	buf.WriteString("\"msg\":\"") // nolint:errcheck
 	enc.WriteMessage(buf, msg, args)
 	buf.WriteString("\"}") // nolint:errcheck
 

@@ -10,6 +10,25 @@ func NewEncoderText() *EncoderText {
 	return new(EncoderText)
 }
 
+func (enc *EncoderText) SetOptions(opts Options) {
+	enc.EncoderBase.SetOptions(opts)
+
+	buf := bytebufferpool.Get()
+
+	for i := range enc.opts.Fields {
+		field := enc.opts.Fields[i]
+
+		buf.WriteString(field.Key) // nolint:errcheck
+		buf.WriteByte('=')         // nolint:errcheck
+		enc.WriteInterface(buf, field.Value)
+		buf.WriteString(" - ") // nolint:errcheck
+	}
+
+	enc.fieldsEncoded = buf.String()
+
+	bytebufferpool.Put(buf)
+}
+
 func (enc *EncoderText) Encode(level, msg string, args []interface{}) error {
 	buf := bytebufferpool.Get()
 
@@ -41,6 +60,9 @@ func (enc *EncoderText) Encode(level, msg string, args []interface{}) error {
 
 	buf.WriteString(level) // nolint:errcheck
 	buf.WriteString(" - ") // nolint:errcheck
+
+	buf.WriteString(enc.fieldsEncoded) // nolint:errcheck
+
 	enc.WriteMessage(buf, msg, args)
 	enc.WriteNewLine(buf)
 
