@@ -8,7 +8,7 @@ import (
 var std = newStd()
 
 func newStd() *Logger {
-	l := New("", INFO, os.Stderr)
+	l := New(INFO, os.Stderr)
 	l.setCalldepth(calldepth + 1)
 
 	return l
@@ -20,6 +20,10 @@ func WithFields(fields ...Field) *Logger {
 
 func SetFields(fields ...Field) {
 	std.SetFields(fields...)
+}
+
+func IsLevelEnabled(level Level) bool {
+	return std.IsLevelEnabled(level)
 }
 
 func SetLevel(level Level) {
@@ -38,20 +42,12 @@ func SetEncoder(enc Encoder) {
 	std.SetEncoder(enc)
 }
 
-func FatalEnabled() bool {
-	return std.FatalEnabled()
-}
-
 func Fatal(msg ...interface{}) {
 	std.Fatal(msg...)
 }
 
 func Fatalf(msg string, args ...interface{}) {
 	std.Fatalf(msg, args...)
-}
-
-func ErrorEnabled() bool {
-	return std.ErrorEnabled()
 }
 
 func Error(msg ...interface{}) {
@@ -62,10 +58,6 @@ func Errorf(msg string, args ...interface{}) {
 	std.Errorf(msg, args...)
 }
 
-func WarningEnabled() bool {
-	return std.WarningEnabled()
-}
-
 func Warning(msg ...interface{}) {
 	std.Warning(msg...)
 }
@@ -74,20 +66,12 @@ func Warningf(msg string, args ...interface{}) {
 	std.Warningf(msg, args...)
 }
 
-func InfoEnabled() bool {
-	return std.InfoEnabled()
-}
-
 func Info(msg ...interface{}) {
 	std.Info(msg...)
 }
 
 func Infof(msg string, args ...interface{}) {
 	std.Infof(msg, args...)
-}
-
-func DebugEnabled() bool {
-	return std.DebugEnabled()
 }
 
 func Debug(msg ...interface{}) {

@@ -6,32 +6,23 @@ import (
 	"os"
 )
 
-func newLogger(level Level, output io.Writer, enc Encoder, flag int, field ...Field) *Logger {
+func newLogger(level Level, output io.Writer, enc Encoder, flag int, fields ...Field) *Logger {
 	l := new(Logger)
 	l.SetEncoder(enc)
 	l.SetLevel(level)
 	l.SetFlags(flag)
 	l.SetOutput(output)
-	l.SetFields(field...)
+	l.SetFields(fields...)
 	l.setCalldepth(calldepth)
 
 	return l
 }
 
 // New create new instance of Logger.
-func New(name string, level Level, output io.Writer) *Logger {
+func New(level Level, output io.Writer, fields ...Field) *Logger {
 	enc := NewEncoderText()
 
-	fields := make([]Field, 0)
-	if name != "" {
-		fields = append(fields, Field{"name", name})
-	}
-
-	return newLogger(level, output, enc, log.LstdFlags, fields...)
-}
-
-func (l *Logger) checkLevel(level Level) bool {
-	return l.level >= level
+	return newLogger(INFO, os.Stderr, enc, log.LstdFlags, fields...)
 }
 
 func (l *Logger) getField(key string) *Field {
@@ -51,26 +42,7 @@ func (l *Logger) setCalldepth(calldepth int) {
 	l.encoder.SetOptions(l.options)
 }
 
-func (l *Logger) encode(level, msg string, args []interface{}) {
-	l.mu.RLock()
-	l.encoder.Encode(level, msg, args) // nolint:errcheck
-	l.mu.RUnlock()
-}
-
-func (l *Logger) WithFields(fields ...Field) *Logger {
-	l.mu.RLock()
-
-	l2 := newLogger(l.level, l.output, l.encoder, l.flag, l.options.Fields...)
-	l2.SetFields(fields...)
-
-	l.mu.RUnlock()
-
-	return l2
-}
-
-func (l *Logger) SetFields(fields ...Field) {
-	l.mu.Lock()
-
+func (l *Logger) setFields(fields ...Field) {
 	for _, field := range fields {
 		if optField := l.getField(field.Key); optField != nil {
 			optField.Value = field.Value
@@ -80,21 +52,55 @@ func (l *Logger) SetFields(fields ...Field) {
 	}
 
 	l.encoder.SetOptions(l.options)
+}
 
+func (l *Logger) isLevelEnabled(level Level) bool {
+	return l.level >= level
+}
+
+func (l *Logger) encode(level Level, levelStr, msg string, args []interface{}) {
+	l.mu.RLock()
+
+	if l.isLevelEnabled(level) {
+		l.encoder.Encode(levelStr, msg, args) // nolint:errcheck
+	}
+
+	l.mu.RUnlock()
+}
+
+func (l *Logger) clone() *Logger {
+	return newLogger(l.level, l.output, l.encoder, l.flag, l.options.Fields...)
+}
+
+func (l *Logger) WithFields(fields ...Field) *Logger {
+	l.mu.RLock()
+
+	l2 := l.clone()
+	l2.setFields(fields...)
+
+	l.mu.RUnlock()
+
+	return l2
+}
+
+func (l *Logger) SetFields(fields ...Field) {
+	l.mu.Lock()
+	l.setFields(fields...)
 	l.mu.Unlock()
+}
+
+func (l *Logger) IsLevelEnabled(level Level) bool {
+	l.mu.RLock()
+	enabled := l.isLevelEnabled(level)
+	l.mu.RUnlock()
+
+	return enabled
 }
 
 // SetLevel set level of log.
 func (l *Logger) SetLevel(level Level) {
 	l.mu.Lock()
-
 	l.level = level
-	l.fatalEnabled = l.checkLevel(FATAL)
-	l.errorEnabled = l.checkLevel(ERROR)
-	l.warningEnabled = l.checkLevel(WARNING)
-	l.infoEnabled = l.checkLevel(INFO)
-	l.debugEnabled = l.checkLevel(DEBUG)
-
 	l.mu.Unlock()
 }
 
@@ -132,88 +138,52 @@ func (l *Logger) SetEncoder(enc Encoder) {
 	l.mu.Unlock()
 }
 
-func (l *Logger) FatalEnabled() bool {
-	return l.fatalEnabled
-}
-
 func (l *Logger) Fatal(msg ...interface{}) {
-	l.encode(fatalLevelStr, "", msg)
+	l.encode(FATAL, fatalLevelStr, "", msg)
 	os.Exit(1)
 }
 
 func (l *Logger) Fatalf(msg string, args ...interface{}) {
-	l.encode(fatalLevelStr, msg, args)
+	l.encode(FATAL, fatalLevelStr, msg, args)
 	os.Exit(1)
 }
 
-func (l *Logger) ErrorEnabled() bool {
-	return l.errorEnabled
-}
-
 func (l *Logger) Error(msg ...interface{}) {
-	if l.ErrorEnabled() {
-		l.encode(errorLevelStr, "", msg)
-	}
+	l.encode(ERROR, errorLevelStr, "", msg)
 }
 
 func (l *Logger) Errorf(msg string, args ...interface{}) {
-	if l.ErrorEnabled() {
-		l.encode(errorLevelStr, msg, args)
-	}
-}
-
-func (l *Logger) WarningEnabled() bool {
-	return l.warningEnabled
+	l.encode(ERROR, errorLevelStr, msg, args)
 }
 
 func (l *Logger) Warning(msg ...interface{}) {
-	if l.WarningEnabled() {
-		l.encode(warningLevelStr, "", msg)
-	}
+	l.encode(WARNING, warningLevelStr, "", msg)
 }
 
 func (l *Logger) Warningf(msg string, args ...interface{}) {
-	if l.WarningEnabled() {
-		l.encode(warningLevelStr, msg, args)
-	}
-}
-
-func (l *Logger) InfoEnabled() bool {
-	return l.infoEnabled
+	l.encode(WARNING, warningLevelStr, msg, args)
 }
 
 func (l *Logger) Info(msg ...interface{}) {
-	if l.InfoEnabled() {
-		l.encode(infoLevelStr, "", msg)
-	}
+	l.encode(INFO, infoLevelStr, "", msg)
 }
 
 func (l *Logger) Infof(msg string, args ...interface{}) {
-	if l.InfoEnabled() {
-		l.encode(infoLevelStr, msg, args)
-	}
-}
-
-func (l *Logger) DebugEnabled() bool {
-	return l.debugEnabled
+	l.encode(INFO, infoLevelStr, msg, args)
 }
 
 func (l *Logger) Debug(msg ...interface{}) {
-	if l.DebugEnabled() {
-		l.encode(debugLevelStr, "", msg)
-	}
+	l.encode(DEBUG, debugLevelStr, "", msg)
 }
 
 func (l *Logger) Debugf(msg string, args ...interface{}) {
-	if l.DebugEnabled() {
-		l.encode(debugLevelStr, msg, args)
-	}
+	l.encode(DEBUG, debugLevelStr, msg, args)
 }
 
 func (l *Logger) Print(msg ...interface{}) {
-	l.encode("", "", msg)
+	l.encode(PRINT, printLevelStr, "", msg)
 }
 
 func (l *Logger) Printf(msg string, args ...interface{}) {
-	l.encode("", msg, args)
+	l.encode(PRINT, printLevelStr, msg, args)
 }

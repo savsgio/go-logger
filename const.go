@@ -3,7 +3,8 @@ package logger
 const calldepth = 6
 
 const (
-	INVALID Level = iota - 1
+	invalid Level = iota - 1
+	PRINT
 	FATAL
 	ERROR
 	WARNING
@@ -12,6 +13,7 @@ const (
 )
 
 const (
+	printLevelStr   = ""
 	fatalLevelStr   = "FATAL"
 	errorLevelStr   = "ERROR"
 	warningLevelStr = "WARNING"

@@ -12,12 +12,6 @@ type Logger struct {
 	output  io.Writer
 	options Options
 	encoder Encoder
-
-	fatalEnabled   bool
-	errorEnabled   bool
-	warningEnabled bool
-	infoEnabled    bool
-	debugEnabled   bool
 }
 
 type Level int

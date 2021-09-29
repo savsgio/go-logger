@@ -1,18 +1,23 @@
 package logger
 
-func ParseLevel(levelStr string) Level {
-	switch levelStr {
-	case "fatal":
-		return FATAL
-	case "error":
-		return ERROR
-	case "warning":
-		return WARNING
-	case "info":
-		return INFO
-	case "debug":
-		return DEBUG
+import "strings"
+
+func ParseLevel(levelStr string) (level Level, err error) {
+	switch strings.ToUpper(levelStr) {
+	case fatalLevelStr:
+		level = FATAL
+	case errorLevelStr:
+		level = ERROR
+	case warningLevelStr:
+		level = WARNING
+	case infoLevelStr:
+		level = INFO
+	case debugLevelStr:
+		level = DEBUG
 	default:
-		return INVALID
+		level = invalid
+		err = ErrInvalidLevel
 	}
+
+	return level, err
 }
