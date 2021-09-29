@@ -1,5 +1,4 @@
-go-logger
-=========
+# go-logger
 
 [![Test status](https://github.com/savsgio/go-logger/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/savsgio/go-logger/actions?workflow=test)
 [![Coverage Status](https://coveralls.io/repos/github/savsgio/go-logger/badge.svg?branch=master)](https://coveralls.io/github/savsgio/go-logger?branch=master)
@@ -7,20 +6,12 @@ go-logger
 [![GoDev](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/github.com/savsgio/go-logger/v2)
 [![GitHub release](https://img.shields.io/github/release/savsgio/go-logger.svg)](https://github.com/savsgio/go-logger/releases)
 
-Lighweight wrapper for oficial Golang Log to adds support of levels for the log and reduce extra-allocations to zero.
+Lightweight and fast logger.
 
 ## Install
 
-- **WITH** Go modules:
-
 ```bash
-go get github.com/savsgio/go-logger/v2
-```
-
-- **WITHOUT** Go modules:
-
-```bash
-go get github.com/savsgio/go-logger
+go get github.com/savsgio/go-logger/v3
 ```
 
 ## Supported Go versions:
@@ -33,6 +24,7 @@ go get github.com/savsgio/go-logger
 - 1.12.x
 
 ## Benchmarks
+
 ```
 Benchmark_Printf-12              3526083               335 ns/op             124 B/op          0 allocs/op
 Benchmark_Errorf-12              3443049               375 ns/op             137 B/op          0 allocs/op
@@ -43,23 +35,24 @@ Benchmark_Debugf-12              3719518               317 ns/op             127
 
 ## Levels:
 
-|Literal |Code (constant) |Value (str) |
-|--------|----------------|------------|
-|Fatal   |logger.FATAL    |fatal       |
-|Error   |logger.ERROR    |error       |
-|Warning |logger.WARNING  |warning     |
-|Info    |logger.INFO     |info        |
-|Debug   |logger.DEBUG    |debug       |
+| Literal | Code (constant) | Value (str) |
+| ------- | --------------- | ----------- |
+| Fatal   | logger.FATAL    | fatal       |
+| Error   | logger.ERROR    | error       |
+| Warning | logger.WARNING  | warning     |
+| Info    | logger.INFO     | info        |
+| Debug   | logger.DEBUG    | debug       |
 
-**The default level for std logger is *logger.INFO***
+**The default level for std logger is _logger.INFO_**
 
-## Output (*Important*)
+## Output (_Important_)
 
 By default, output of log is `os.Stderr`, but you can customize it with other `io.Writer`.
 
 ### Format
 
 Example of format ouput:
+
 ```text
 # Standar instance of logger
 2018/03/16 12:26:48 - DEBUG - Listening on http://0.0.0.0:8000
@@ -71,6 +64,7 @@ Example of format ouput:
 ## How to use:
 
 Call logger ever you want with:
+
 ```go
 logger.Debugf("Listening on %s", "http://0.0.0.0:8000")
 ```
@@ -82,7 +76,6 @@ myLog := logger.New("myInstance", logger.DEBUG, &bytes.Buffer{})  // Change leve
 
 myLog.Warning("Hello gopher")
 ```
-
 
 ### Example
 
@@ -105,7 +98,6 @@ func myFunc(){
 }
 ```
 
-Contributing
-------------
+## Contributing
 
 **Feel free to contribute it or fork me...** :wink:

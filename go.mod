@@ -1,4 +1,4 @@
-module github.com/savsgio/go-logger/v2
+module github.com/savsgio/go-logger/v3
 
 go 1.12
 
