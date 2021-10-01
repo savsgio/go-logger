@@ -10,7 +10,6 @@ import (
 // New create new instance of Logger.
 func New(level Level, output io.Writer, fields ...Field) *Logger {
 	cfg := EncoderConfig{
-		Fields:    fields,
 		calldepth: calldepth,
 	}
 
@@ -22,6 +21,9 @@ func New(level Level, output io.Writer, fields ...Field) *Logger {
 	l.level = level
 	l.output = output
 	l.encoder = enc
+
+	l.SetFields(fields...)
+	l.SetFlags(LstdFlags)
 
 	return l
 }

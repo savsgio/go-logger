@@ -55,16 +55,16 @@ func (enc *EncoderJSON) Encode(buf *bytebufferpool.ByteBuffer, level, msg string
 		buf.WriteString("\",") // nolint:errcheck
 	}
 
-	if enc.cfg.Shortfile || enc.cfg.Longfile {
-		buf.WriteString("\"file\":\"") // nolint:errcheck
-		enc.WriteFileCaller(buf)
-		buf.WriteString("\",") // nolint:errcheck
-	}
-
 	if level != "" {
 		buf.WriteString("\"level\":\"") // nolint:errcheck
 		buf.WriteString(level)          // nolint:errcheck
 		buf.WriteString("\",")          // nolint:errcheck
+	}
+
+	if enc.cfg.Shortfile || enc.cfg.Longfile {
+		buf.WriteString("\"file\":\"") // nolint:errcheck
+		enc.WriteFileCaller(buf)
+		buf.WriteString("\",") // nolint:errcheck
 	}
 
 	enc.WriteFieldsEnconded(buf)
