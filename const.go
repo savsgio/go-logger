@@ -13,6 +13,15 @@ const (
 )
 
 const (
+	Ldatetime Flag = 1 << iota
+	Ltimestamp
+	LUTC
+	Llongfile
+	Lshortfile
+	LstdFlags = Ldatetime
+)
+
+const (
 	printLevelStr   = ""
 	fatalLevelStr   = "FATAL"
 	errorLevelStr   = "ERROR"

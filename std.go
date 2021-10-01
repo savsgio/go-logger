@@ -15,7 +15,10 @@ func newStd() *Logger {
 }
 
 func WithFields(fields ...Field) *Logger {
-	return std.WithFields(fields...)
+	l := std.WithFields(fields...)
+	l.setCalldepth(calldepth)
+
+	return l
 }
 
 func SetFields(fields ...Field) {
@@ -30,7 +33,7 @@ func SetLevel(level Level) {
 	std.SetLevel(level)
 }
 
-func SetFlags(flag int) {
+func SetFlags(flag Flag) {
 	std.SetFlags(flag)
 }
 

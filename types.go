@@ -5,44 +5,44 @@ import (
 	"sync"
 )
 
-type Logger struct {
-	mu      sync.RWMutex // ensures atomic writes; protects the following fields
-	level   Level
-	flag    int
-	output  io.Writer
-	options Options
-	encoder Encoder
-}
-
 type Level int
+
+type Flag int
 
 type Field struct {
 	Key   string
 	Value interface{}
 }
 
-type Options struct {
-	Fields           []Field
-	UTC              bool
-	Date             bool
-	Time             bool
-	TimeMicroseconds bool
-	Shortfile        bool
-	Longfile         bool
+type Config struct {
+	Level  Level
+	Output io.Writer
+	Fields []Field
+
+	Flag      Flag
+	Datetime  bool
+	Timestamp bool
+	UTC       bool
+	Shortfile bool
+	Longfile  bool
 
 	calldepth int
 }
 
+type Logger struct {
+	mu      sync.RWMutex // ensures atomic writes; protects the following fields
+	cfg     Config
+	encoder Encoder
+}
+
 type Encoder interface {
-	SetOutput(output io.Writer)
-	SetOptions(opts Options)
+	Copy() Encoder
+	SetConfig(cfg Config)
 	Encode(level, msg string, args []interface{}) error
 }
 
 type EncoderBase struct {
-	output io.Writer
-	opts   Options
-
+	cfg           Config
 	fieldsEncoded string
 }
 

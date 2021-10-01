@@ -2,32 +2,31 @@ package logger
 
 import (
 	"io"
-	"log"
 	"os"
 )
 
-func newLogger(level Level, output io.Writer, enc Encoder, flag int, fields ...Field) *Logger {
+// New create new instance of Logger.
+func New(level Level, output io.Writer, fields ...Field) *Logger {
+	cfg := Config{
+		Level:     level,
+		Output:    output,
+		Fields:    fields,
+		calldepth: calldepth,
+	}
+
+	enc := NewEncoderText()
+	enc.SetConfig(cfg)
+
 	l := new(Logger)
-	l.SetEncoder(enc)
-	l.SetLevel(level)
-	l.SetFlags(flag)
-	l.SetOutput(output)
-	l.SetFields(fields...)
-	l.setCalldepth(calldepth)
+	l.cfg = cfg
+	l.encoder = enc
 
 	return l
 }
 
-// New create new instance of Logger.
-func New(level Level, output io.Writer, fields ...Field) *Logger {
-	enc := NewEncoderText()
-
-	return newLogger(INFO, os.Stderr, enc, log.LstdFlags, fields...)
-}
-
 func (l *Logger) getField(key string) *Field {
-	for i := range l.options.Fields {
-		field := &l.options.Fields[i]
+	for i := range l.cfg.Fields {
+		field := &l.cfg.Fields[i]
 
 		if field.Key == key {
 			return field
@@ -37,9 +36,9 @@ func (l *Logger) getField(key string) *Field {
 	return nil
 }
 
-func (l *Logger) setCalldepth(calldepth int) {
-	l.options.calldepth = calldepth
-	l.encoder.SetOptions(l.options)
+func (l *Logger) setCalldepth(value int) {
+	l.cfg.calldepth = value
+	l.encoder.SetConfig(l.cfg)
 }
 
 func (l *Logger) setFields(fields ...Field) {
@@ -47,15 +46,15 @@ func (l *Logger) setFields(fields ...Field) {
 		if optField := l.getField(field.Key); optField != nil {
 			optField.Value = field.Value
 		} else {
-			l.options.Fields = append(l.options.Fields, field)
+			l.cfg.Fields = append(l.cfg.Fields, field)
 		}
 	}
 
-	l.encoder.SetOptions(l.options)
+	l.encoder.SetConfig(l.cfg)
 }
 
 func (l *Logger) isLevelEnabled(level Level) bool {
-	return l.level >= level
+	return l.cfg.Level >= level
 }
 
 func (l *Logger) encode(level Level, levelStr, msg string, args []interface{}) {
@@ -69,7 +68,15 @@ func (l *Logger) encode(level Level, levelStr, msg string, args []interface{}) {
 }
 
 func (l *Logger) clone() *Logger {
-	return newLogger(l.level, l.output, l.encoder, l.flag, l.options.Fields...)
+	cfgFields := make([]Field, len(l.cfg.Fields))
+	copy(cfgFields, l.cfg.Fields)
+
+	l2 := new(Logger)
+	l2.cfg = l.cfg
+	l2.cfg.Fields = cfgFields
+	l2.encoder = l.encoder.Copy()
+
+	return l2
 }
 
 func (l *Logger) WithFields(fields ...Field) *Logger {
@@ -89,34 +96,26 @@ func (l *Logger) SetFields(fields ...Field) {
 	l.mu.Unlock()
 }
 
-func (l *Logger) IsLevelEnabled(level Level) bool {
-	l.mu.RLock()
-	enabled := l.isLevelEnabled(level)
-	l.mu.RUnlock()
-
-	return enabled
-}
-
 // SetLevel set level of log.
 func (l *Logger) SetLevel(level Level) {
 	l.mu.Lock()
-	l.level = level
+	l.cfg.Level = level
+	l.encoder.SetConfig(l.cfg)
 	l.mu.Unlock()
 }
 
 // SetLogFlags sets the output flags for the logger.
-func (l *Logger) SetFlags(flag int) {
+func (l *Logger) SetFlags(flag Flag) {
 	l.mu.Lock()
 
-	l.flag = flag
-	l.options.UTC = flag&log.LUTC != 0
-	l.options.Date = flag&log.Ldate != 0
-	l.options.Time = flag&log.Ltime != 0
-	l.options.TimeMicroseconds = flag&log.Lmicroseconds != 0
-	l.options.Shortfile = flag&log.Lshortfile != 0
-	l.options.Longfile = flag&log.Llongfile != 0
+	l.cfg.Flag = flag
+	l.cfg.Datetime = flag&Ldatetime != 0
+	l.cfg.Timestamp = flag&Ltimestamp != 0
+	l.cfg.UTC = flag&LUTC != 0
+	l.cfg.Shortfile = flag&Lshortfile != 0
+	l.cfg.Longfile = flag&Llongfile != 0
 
-	l.encoder.SetOptions(l.options)
+	l.encoder.SetConfig(l.cfg)
 
 	l.mu.Unlock()
 }
@@ -124,8 +123,8 @@ func (l *Logger) SetFlags(flag int) {
 // SetOutput set output of log.
 func (l *Logger) SetOutput(output io.Writer) {
 	l.mu.Lock()
-	l.output = output
-	l.encoder.SetOutput(output)
+	l.cfg.Output = output
+	l.encoder.SetConfig(l.cfg)
 	l.mu.Unlock()
 }
 
@@ -133,9 +132,16 @@ func (l *Logger) SetOutput(output io.Writer) {
 func (l *Logger) SetEncoder(enc Encoder) {
 	l.mu.Lock()
 	l.encoder = enc
-	l.encoder.SetOutput(l.output)
-	l.encoder.SetOptions(l.options)
+	l.encoder.SetConfig(l.cfg)
 	l.mu.Unlock()
+}
+
+func (l *Logger) IsLevelEnabled(level Level) bool {
+	l.mu.RLock()
+	enabled := l.isLevelEnabled(level)
+	l.mu.RUnlock()
+
+	return enabled
 }
 
 func (l *Logger) Fatal(msg ...interface{}) {
