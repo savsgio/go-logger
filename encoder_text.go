@@ -17,7 +17,7 @@ func (enc *EncoderText) Copy() Encoder {
 	return copyEnc
 }
 
-func (enc *EncoderText) SetConfig(cfg Config) {
+func (enc *EncoderText) SetConfig(cfg EncoderConfig) {
 	enc.EncoderBase.SetConfig(cfg)
 
 	buf := bytebufferpool.Get()
@@ -34,9 +34,7 @@ func (enc *EncoderText) SetConfig(cfg Config) {
 	bytebufferpool.Put(buf)
 }
 
-func (enc *EncoderText) Encode(level, msg string, args []interface{}) error {
-	buf := bytebufferpool.Get()
-
+func (enc *EncoderText) Encode(buf *bytebufferpool.ByteBuffer, level, msg string, args []interface{}) error {
 	now := time.Now()
 	if enc.cfg.UTC {
 		now = now.UTC()
@@ -73,9 +71,5 @@ func (enc *EncoderText) Encode(level, msg string, args []interface{}) error {
 
 	enc.WriteNewLine(buf)
 
-	_, err := enc.Write(buf.Bytes())
-
-	bytebufferpool.Put(buf)
-
-	return err
+	return nil
 }

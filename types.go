@@ -3,6 +3,8 @@ package logger
 import (
 	"io"
 	"sync"
+
+	"github.com/valyala/bytebufferpool"
 )
 
 type Level int
@@ -14,11 +16,8 @@ type Field struct {
 	Value interface{}
 }
 
-type Config struct {
-	Level  Level
-	Output io.Writer
-	Fields []Field
-
+type EncoderConfig struct {
+	Fields    []Field
 	Flag      Flag
 	Datetime  bool
 	Timestamp bool
@@ -31,18 +30,20 @@ type Config struct {
 
 type Logger struct {
 	mu      sync.RWMutex // ensures atomic writes; protects the following fields
-	cfg     Config
+	cfg     EncoderConfig
+	level   Level
+	output  io.Writer
 	encoder Encoder
 }
 
 type Encoder interface {
 	Copy() Encoder
-	SetConfig(cfg Config)
-	Encode(level, msg string, args []interface{}) error
+	SetConfig(cfg EncoderConfig)
+	Encode(buf *bytebufferpool.ByteBuffer, level, msg string, args []interface{}) error
 }
 
 type EncoderBase struct {
-	cfg           Config
+	cfg           EncoderConfig
 	fieldsEncoded string
 }
 

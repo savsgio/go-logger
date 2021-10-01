@@ -25,16 +25,12 @@ func SetFields(fields ...Field) {
 	std.SetFields(fields...)
 }
 
-func IsLevelEnabled(level Level) bool {
-	return std.IsLevelEnabled(level)
+func SetFlags(flag Flag) {
+	std.SetFlags(flag)
 }
 
 func SetLevel(level Level) {
 	std.SetLevel(level)
-}
-
-func SetFlags(flag Flag) {
-	std.SetFlags(flag)
 }
 
 func SetOutput(output io.Writer) {
@@ -43,6 +39,10 @@ func SetOutput(output io.Writer) {
 
 func SetEncoder(enc Encoder) {
 	std.SetEncoder(enc)
+}
+
+func IsLevelEnabled(level Level) bool {
+	return std.IsLevelEnabled(level)
 }
 
 func Fatal(msg ...interface{}) {

@@ -3,13 +3,13 @@ package logger
 import (
 	"io"
 	"os"
+
+	"github.com/valyala/bytebufferpool"
 )
 
 // New create new instance of Logger.
 func New(level Level, output io.Writer, fields ...Field) *Logger {
-	cfg := Config{
-		Level:     level,
-		Output:    output,
+	cfg := EncoderConfig{
 		Fields:    fields,
 		calldepth: calldepth,
 	}
@@ -19,6 +19,8 @@ func New(level Level, output io.Writer, fields ...Field) *Logger {
 
 	l := new(Logger)
 	l.cfg = cfg
+	l.level = level
+	l.output = output
 	l.encoder = enc
 
 	return l
@@ -54,14 +56,19 @@ func (l *Logger) setFields(fields ...Field) {
 }
 
 func (l *Logger) isLevelEnabled(level Level) bool {
-	return l.cfg.Level >= level
+	return l.level >= level
 }
 
 func (l *Logger) encode(level Level, levelStr, msg string, args []interface{}) {
 	l.mu.RLock()
 
 	if l.isLevelEnabled(level) {
-		l.encoder.Encode(levelStr, msg, args) // nolint:errcheck
+		buf := bytebufferpool.Get()
+
+		l.encoder.Encode(buf, levelStr, msg, args) // nolint:errcheck
+		l.output.Write(buf.Bytes())                // nolint:errcheck
+
+		bytebufferpool.Put(buf)
 	}
 
 	l.mu.RUnlock()
@@ -74,6 +81,8 @@ func (l *Logger) clone() *Logger {
 	l2 := new(Logger)
 	l2.cfg = l.cfg
 	l2.cfg.Fields = cfgFields
+	l2.level = l.level
+	l2.output = l.output
 	l2.encoder = l.encoder.Copy()
 
 	return l2
@@ -96,14 +105,6 @@ func (l *Logger) SetFields(fields ...Field) {
 	l.mu.Unlock()
 }
 
-// SetLevel set level of log.
-func (l *Logger) SetLevel(level Level) {
-	l.mu.Lock()
-	l.cfg.Level = level
-	l.encoder.SetConfig(l.cfg)
-	l.mu.Unlock()
-}
-
 // SetLogFlags sets the output flags for the logger.
 func (l *Logger) SetFlags(flag Flag) {
 	l.mu.Lock()
@@ -120,11 +121,17 @@ func (l *Logger) SetFlags(flag Flag) {
 	l.mu.Unlock()
 }
 
+// SetLevel set level of log.
+func (l *Logger) SetLevel(level Level) {
+	l.mu.Lock()
+	l.level = level
+	l.mu.Unlock()
+}
+
 // SetOutput set output of log.
 func (l *Logger) SetOutput(output io.Writer) {
 	l.mu.Lock()
-	l.cfg.Output = output
-	l.encoder.SetConfig(l.cfg)
+	l.output = output
 	l.mu.Unlock()
 }
 

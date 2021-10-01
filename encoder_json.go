@@ -17,7 +17,7 @@ func (enc *EncoderJSON) Copy() Encoder {
 	return copyEnc
 }
 
-func (enc *EncoderJSON) SetConfig(cfg Config) {
+func (enc *EncoderJSON) SetConfig(cfg EncoderConfig) {
 	enc.EncoderBase.SetConfig(cfg)
 
 	buf := bytebufferpool.Get()
@@ -35,13 +35,12 @@ func (enc *EncoderJSON) SetConfig(cfg Config) {
 	bytebufferpool.Put(buf)
 }
 
-func (enc *EncoderJSON) Encode(level, msg string, args []interface{}) error {
+func (enc *EncoderJSON) Encode(buf *bytebufferpool.ByteBuffer, level, msg string, args []interface{}) error {
 	now := time.Now()
 	if enc.cfg.UTC {
 		now = now.UTC()
 	}
 
-	buf := bytebufferpool.Get()
 	buf.WriteByte('{') // nolint:errcheck
 
 	if enc.cfg.Datetime {
@@ -76,9 +75,5 @@ func (enc *EncoderJSON) Encode(level, msg string, args []interface{}) error {
 
 	enc.WriteNewLine(buf)
 
-	_, err := enc.Write(buf.Bytes())
-
-	bytebufferpool.Put(buf)
-
-	return err
+	return nil
 }

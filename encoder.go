@@ -9,11 +9,11 @@ import (
 	"github.com/valyala/bytebufferpool"
 )
 
-func (enc *EncoderBase) Config() Config {
+func (enc *EncoderBase) Config() EncoderConfig {
 	return enc.cfg
 }
 
-func (enc *EncoderBase) SetConfig(cfg Config) {
+func (enc *EncoderBase) SetConfig(cfg EncoderConfig) {
 	enc.cfg = cfg
 }
 
@@ -98,8 +98,4 @@ func (enc *EncoderBase) WriteNewLine(buf *bytebufferpool.ByteBuffer) {
 	if buf.B[buf.Len()-1] != '\n' {
 		buf.WriteByte('\n') // nolint:errcheck
 	}
-}
-
-func (enc *EncoderBase) Write(p []byte) (int, error) {
-	return enc.cfg.Output.Write(p) // nolint:wrapcheck
 }
