@@ -6,6 +6,8 @@ import (
 	"github.com/valyala/bytebufferpool"
 )
 
+const sep = " - "
+
 func NewEncoderText() *EncoderText {
 	return new(EncoderText)
 }
@@ -20,14 +22,27 @@ func (enc *EncoderText) Copy() Encoder {
 func (enc *EncoderText) SetConfig(cfg EncoderConfig) {
 	enc.EncoderBase.SetConfig(cfg)
 
-	buf := bytebufferpool.Get()
-
-	for _, field := range enc.cfg.Fields {
-		buf.WriteString(field.Key) // nolint:errcheck
-		buf.WriteString(": ")      // nolint:errcheck
-		enc.WriteInterface(buf, field.Value)
-		buf.WriteString(" - ") // nolint:errcheck
+	if len(cfg.Fields) == 0 {
+		return
 	}
+
+	buf := bytebufferpool.Get()
+	buf.WriteString("{") // nolint:errcheck
+
+	for i, field := range enc.cfg.Fields {
+		if i > 0 {
+			buf.WriteString(", ") // nolint:errcheck
+		}
+
+		buf.WriteString("\"")      // nolint:errcheck
+		buf.WriteString(field.Key) // nolint:errcheck
+		buf.WriteString("\":\"")   // nolint:errcheck
+		enc.WriteInterface(buf, field.Value)
+		buf.WriteString("\"") // nolint:errcheck
+	}
+
+	buf.WriteString("}") // nolint:errcheck
+	buf.WriteString(sep) // nolint:errcheck
 
 	enc.SetFieldsEnconded(buf.String())
 
@@ -41,32 +56,27 @@ func (enc *EncoderText) Encode(buf *bytebufferpool.ByteBuffer, level, msg string
 	}
 
 	if enc.cfg.Datetime {
-		buf.WriteString("datetime: ") // nolint:errcheck
 		enc.WriteDatetime(buf, now)
-		buf.WriteString(" - ") // nolint:errcheck
+		buf.WriteString(sep) // nolint:errcheck
 	}
 
 	if enc.cfg.Timestamp {
-		buf.WriteString("timestamp: ") // nolint:errcheck
 		enc.WriteTimestamp(buf, now)
-		buf.WriteString(" - ") // nolint:errcheck
+		buf.WriteString(sep) // nolint:errcheck
 	}
 
 	if level != "" {
-		buf.WriteString("level: ") // nolint:errcheck
-		buf.WriteString(level)     // nolint:errcheck
-		buf.WriteString(" - ")     // nolint:errcheck
+		buf.WriteString(level) // nolint:errcheck
+		buf.WriteString(sep)   // nolint:errcheck
 	}
 
 	if enc.cfg.Shortfile || enc.cfg.Longfile {
-		buf.WriteString("file: ") // nolint:errcheck
 		enc.WriteFileCaller(buf)
-		buf.WriteString(" - ") // nolint:errcheck
+		buf.WriteString(sep) // nolint:errcheck
 	}
 
 	enc.WriteFieldsEnconded(buf)
 
-	buf.WriteString("message: ") // nolint:errcheck
 	enc.WriteMessage(buf, msg, args)
 
 	enc.WriteNewLine(buf)
