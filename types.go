@@ -38,6 +38,7 @@ type Logger struct {
 
 type Encoder interface {
 	Copy() Encoder
+	Config() EncoderConfig
 	SetConfig(cfg EncoderConfig)
 	Encode(buf *bytebufferpool.ByteBuffer, level, msg string, args []interface{}) error
 }
