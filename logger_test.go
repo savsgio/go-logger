@@ -44,8 +44,8 @@ func Test_New(t *testing.T) {
 		t.Error("Logger.enconder is not a EncoderText pointer")
 	}
 
-	if cfg := l.encoder.Config(); !reflect.DeepEqual(cfg, l.cfg) {
-		t.Errorf("Logger.enconder.Config() == %v, want %v", cfg, l.cfg)
+	if encoderCfg := l.encoder.Config(); !reflect.DeepEqual(encoderCfg, l.cfg) {
+		t.Errorf("Logger.enconder.Config() == %v, want %v", encoderCfg, l.cfg)
 	}
 }
 
@@ -67,60 +67,90 @@ func TestLogger_getField(t *testing.T) {
 }
 
 func TestLogger_setCalldepth(t *testing.T) {
-	calldepth := 123
+	testCalldepth := 123
 
 	l := newTestLogger()
-	l.setCalldepth(calldepth)
+	l.setCalldepth(testCalldepth)
 
-	if l.cfg.calldepth != calldepth {
-		t.Errorf("calldepth == %d, want %d", l.cfg.calldepth, calldepth)
+	if l.cfg.calldepth != testCalldepth {
+		t.Errorf("calldepth == %d, want %d", l.cfg.calldepth, testCalldepth)
 	}
 
-	if cfg := l.encoder.Config(); cfg.calldepth != calldepth {
-		t.Errorf("calldepth == %d, want %d", l.cfg.calldepth, calldepth)
+	if encoderCfg := l.encoder.Config(); encoderCfg.calldepth != testCalldepth {
+		t.Errorf("encoder calldepth == %d, want %d", encoderCfg.calldepth, testCalldepth)
 	}
 }
 
-func TestLogger_setFields(t *testing.T) {
+func TestLogger_setFields(t *testing.T) { // nolint:funlen
 	field1 := Field{"key", "value"}
 	field2 := Field{"foo", []int{1, 2, 3}}
 
+	type args struct {
+		fields []Field
+	}
+
+	type want struct {
+		totalFields int
+	}
+
 	l := newTestLogger()
-	l.setFields(field1, field2)
 
-	totalFields := len(l.cfg.Fields)
-	wantTotalFields := 2
-
-	if totalFields != wantTotalFields {
-		t.Errorf("length == %d, want %d", totalFields, wantTotalFields)
+	tests := []struct {
+		name string
+		args args
+		want want
+	}{
+		{
+			name: "new",
+			args: args{
+				fields: []Field{field1, field2},
+			},
+			want: want{
+				totalFields: 2,
+			},
+		},
+		{
+			name: "update",
+			args: args{
+				fields: []Field{{field1.Key, 123.45}},
+			},
+			want: want{
+				totalFields: 2,
+			},
+		},
+		{
+			name: "append",
+			args: args{
+				fields: []Field{{"data", []interface{}{1, "2", nil}}},
+			},
+			want: want{
+				totalFields: 3,
+			},
+		},
 	}
 
-	if cfg := l.encoder.Config(); !reflect.DeepEqual(l.cfg.Fields, cfg.Fields) {
-		t.Errorf("result == %v, want %v", l.cfg.Fields, cfg.Fields)
-	}
+	for i := range tests {
+		test := tests[i]
 
-	newField1 := Field{field1.Key, 123.45}
-	l.setFields(newField1)
+		t.Run(test.name, func(t *testing.T) {
+			t.Helper()
 
-	if currentTotalFields := len(l.cfg.Fields); currentTotalFields != wantTotalFields {
-		t.Errorf("length (update) == %d, want %d", currentTotalFields, wantTotalFields)
-	}
+			l.setFields(test.args.fields...)
 
-	if field := l.getField(field1.Key); reflect.DeepEqual(field.Value, field1.Value) {
-		t.Errorf("field1 value (update) == %v, want %v", field.Value, newField1.Value)
-	}
+			if totalFields := len(l.cfg.Fields); totalFields != test.want.totalFields {
+				t.Errorf("length == %d, want %d", totalFields, test.want.totalFields)
+			}
 
-	newField := Field{"data", []interface{}{1, "2", nil}}
-	l.setFields(newField)
+			if encoderCfg := l.encoder.Config(); !reflect.DeepEqual(encoderCfg.Fields, l.cfg.Fields) {
+				t.Errorf("encoder fields == %v, want %v", encoderCfg.Fields, l.cfg.Fields)
+			}
 
-	wantTotalFields++
-
-	if currentTotalFields := len(l.cfg.Fields); currentTotalFields != wantTotalFields {
-		t.Errorf("length (append) == %d, want %d", currentTotalFields, wantTotalFields)
-	}
-
-	if field := l.getField(newField.Key); !reflect.DeepEqual(field.Value, newField.Value) {
-		t.Error("the field value is not updated")
+			for _, argField := range test.args.fields {
+				if field := l.getField(argField.Key); !reflect.DeepEqual(field.Value, argField.Value) {
+					t.Errorf("field value == %v, want %v", field.Value, argField.Value)
+				}
+			}
+		})
 	}
 }
 
