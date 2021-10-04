@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"bytes"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -172,6 +173,269 @@ func TestLogger_isLevelEnabled(t *testing.T) {
 	}
 }
 
+func TestLogger_encode(t *testing.T) {
+	output := new(bytes.Buffer)
+
+	l := newTestLogger()
+	l.SetOutput(output)
+	l.SetLevel(INFO)
+
+	l.encode(ERROR, infoLevelStr, "hello %s", []interface{}{"word"})
+
+	if output.Len() == 0 {
+		t.Error("enconded output has not been written")
+	}
+
+	output.Reset()
+
+	l.encode(DEBUG, debugLevelStr, "hello %s", []interface{}{"word"})
+
+	if output.Len() > 0 {
+		t.Error("enconded output has been written")
+	}
+}
+
+func TestLogger_clone(t *testing.T) {
+	l1 := newTestLogger()
+	l1.SetOutput(new(bytes.Buffer))
+
+	l2 := l1.clone()
+
+	l1Fields := l1.cfg.Fields
+	l2Fields := l2.cfg.Fields
+
+	l1.cfg.Fields = nil
+	l2.cfg.Fields = nil
+
+	if !reflect.DeepEqual(l2.cfg, l1.cfg) {
+		t.Errorf("cfg == %v, want %v", l2.cfg, l1.cfg)
+	}
+
+	if reflect.ValueOf(l2Fields).Pointer() == reflect.ValueOf(l1Fields).Pointer() {
+		t.Errorf("fields values has the same pointer")
+	}
+
+	if l2.level != l1.level {
+		t.Errorf("level == %d, want %d", l2.level, l1.level)
+	}
+
+	if l2.output != l1.output {
+		t.Errorf("output == %p, want %p", l2.output, l1.output)
+	}
+
+	if l2.encoder == l1.encoder {
+		t.Error("encoder values has the same pointer")
+	}
+}
+
+func TestLogger_WithFields(t *testing.T) {
+	l1 := newTestLogger()
+	l2 := l1.WithFields(Field{"key", "value"})
+
+	l1TotalFields := len(l1.cfg.Fields)
+	l2TotalFields := len(l2.cfg.Fields)
+
+	if l2TotalFields == l1TotalFields {
+		t.Errorf("fields == %d, want %d", l2TotalFields, l1TotalFields+1)
+	}
+}
+
+func TestLogger_SetFields(t *testing.T) {
+	fields := []Field{{"key", "value"}, {"foo", "bar"}}
+	l1 := newTestLogger()
+
+	beforeTotalFields := len(l1.cfg.Fields)
+
+	l1.SetFields(fields...)
+
+	afterTotalFields := len(l1.cfg.Fields)
+
+	if beforeTotalFields == afterTotalFields {
+		t.Errorf("fields == %d, want %d", afterTotalFields, beforeTotalFields+len(fields))
+	}
+}
+
+func TestLogger_SetFlags(t *testing.T) { // nolint:funlen
+	type args struct {
+		flag Flag
+	}
+
+	type want struct {
+		cfg EncoderConfig
+	}
+
+	l := newTestLogger()
+
+	tests := []struct {
+		name string
+		args args
+		want want
+	}{
+		{
+			name: "datetime",
+			args: args{flag: Ldatetime},
+			want: want{
+				cfg: EncoderConfig{
+					Flag:     Ldatetime,
+					Datetime: true,
+				},
+			},
+		},
+		{
+			name: "timestamp",
+			args: args{flag: Ltimestamp},
+			want: want{
+				cfg: EncoderConfig{
+					Flag:      Ltimestamp,
+					Timestamp: true,
+				},
+			},
+		},
+		{
+			name: "utc",
+			args: args{flag: LUTC},
+			want: want{
+				cfg: EncoderConfig{
+					Flag: LUTC,
+					UTC:  true,
+				},
+			},
+		},
+		{
+			name: "shortfile",
+			args: args{flag: Lshortfile},
+			want: want{
+				cfg: EncoderConfig{
+					Flag:      Lshortfile,
+					Shortfile: true,
+				},
+			},
+		},
+		{
+			name: "longfile",
+			args: args{flag: Llongfile},
+			want: want{
+				cfg: EncoderConfig{
+					Flag:     Llongfile,
+					Longfile: true,
+				},
+			},
+		},
+		{
+			name: "std",
+			args: args{flag: LstdFlags},
+			want: want{
+				cfg: EncoderConfig{
+					Flag:     LstdFlags,
+					Datetime: true,
+				},
+			},
+		},
+		{
+			name: "all",
+			args: args{flag: Ldatetime | Ltimestamp | LUTC | Llongfile | Lshortfile},
+			want: want{
+				cfg: EncoderConfig{
+					Flag:      Ldatetime | Ltimestamp | LUTC | Llongfile | Lshortfile,
+					Datetime:  true,
+					Timestamp: true,
+					UTC:       true,
+					Shortfile: true,
+					Longfile:  true,
+				},
+			},
+		},
+	}
+
+	for i := range tests {
+		test := tests[i]
+
+		t.Run(test.name, func(t *testing.T) {
+			t.Helper()
+
+			l.SetFlags(test.args.flag)
+
+			if l.cfg.Flag != test.want.cfg.Flag {
+				t.Errorf("Flag == %d, want %d", l.cfg.Flag, test.want.cfg.Flag)
+			}
+
+			if l.cfg.Datetime != test.want.cfg.Datetime {
+				t.Errorf("Datetime == %t, want %t", l.cfg.Datetime, test.want.cfg.Datetime)
+			}
+
+			if l.cfg.Timestamp != test.want.cfg.Timestamp {
+				t.Errorf("Timestamp == %t, want %t", l.cfg.Timestamp, test.want.cfg.Timestamp)
+			}
+
+			if l.cfg.UTC != test.want.cfg.UTC {
+				t.Errorf("UTC == %t, want %t", l.cfg.UTC, test.want.cfg.UTC)
+			}
+
+			if l.cfg.Shortfile != test.want.cfg.Shortfile {
+				t.Errorf("Shortfile == %t, want %t", l.cfg.Shortfile, test.want.cfg.Shortfile)
+			}
+
+			if l.cfg.Longfile != test.want.cfg.Longfile {
+				t.Errorf("Longfile == %t, want %t", l.cfg.Longfile, test.want.cfg.Longfile)
+			}
+
+			if enconderCfg := l.encoder.Config(); !reflect.DeepEqual(enconderCfg, l.cfg) {
+				t.Errorf("enconder config == %v, want %v", enconderCfg, l.cfg)
+			}
+		})
+	}
+}
+
+func TestLogger_SetLevel(t *testing.T) {
+	level := DEBUG
+
+	l1 := newTestLogger()
+	l1.SetLevel(level)
+
+	if l1.level != level {
+		t.Errorf("level == %d, want %d", l1.level, level)
+	}
+}
+
+func TestLogger_SetOutput(t *testing.T) {
+	output := new(bytes.Buffer)
+
+	l1 := newTestLogger()
+	l1.SetOutput(output)
+
+	if l1.output != output {
+		t.Errorf("output == %p, want %p", l1.output, output)
+	}
+}
+
+func TestLogger_SetEncoder(t *testing.T) {
+	encoder := NewEncoderJSON()
+
+	l1 := newTestLogger()
+	l1.SetEncoder(encoder)
+
+	if l1.encoder != encoder {
+		t.Errorf("encoder == %p, want %p", l1.encoder, encoder)
+	}
+}
+
+func TestLogger_IsLevelEnabled(t *testing.T) {
+	l1 := newTestLogger()
+	l1.SetLevel(ERROR)
+
+	if !l1.IsLevelEnabled(FATAL) {
+		t.Error("level is not enabled")
+	}
+
+	if !l1.IsLevelEnabled(ERROR) {
+		t.Error("level is not enabled")
+	}
+
+	if l1.IsLevelEnabled(DEBUG) {
+		t.Error("level is enabled")
+	}
+}
+
 func BenchmarkInfo(b *testing.B) {
 	l := New(INFO, ioutil.Discard)
 	l.SetEncoder(NewEncoderJSON())
@@ -180,14 +444,14 @@ func BenchmarkInfo(b *testing.B) {
 
 	b.Run("lineal", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			l.Info("hello %s", "world")
+			l.Infof("hello %s", "world")
 		}
 	})
 
 	b.Run("parallel", func(b *testing.B) {
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				l.Info("hello %s", "world")
+				l.Infof("hello %s", "world")
 			}
 		})
 	})
