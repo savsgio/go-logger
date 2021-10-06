@@ -7,6 +7,23 @@ import (
 	"github.com/valyala/bytebufferpool"
 )
 
+func newEncodeOutputFunc(l *Logger) encodeOutputFunc {
+	return func(level Level, levelStr, msg string, args []interface{}) {
+		l.mu.RLock()
+
+		if l.isLevelEnabled(level) {
+			buf := bytebufferpool.Get()
+
+			l.encoder.Encode(buf, levelStr, msg, args) // nolint:errcheck
+			l.output.Write(buf.Bytes())                // nolint:errcheck
+
+			bytebufferpool.Put(buf)
+		}
+
+		l.mu.RUnlock()
+	}
+}
+
 // New create new instance of Logger.
 func New(level Level, output io.Writer, fields ...Field) *Logger {
 	cfg := EncoderConfig{
@@ -21,6 +38,7 @@ func New(level Level, output io.Writer, fields ...Field) *Logger {
 	l.level = level
 	l.output = output
 	l.encoder = enc
+	l.encodeOutput = newEncodeOutputFunc(l)
 
 	l.SetFields(fields...)
 	l.SetFlags(LstdFlags)
@@ -61,21 +79,6 @@ func (l *Logger) isLevelEnabled(level Level) bool {
 	return l.level >= level
 }
 
-func (l *Logger) encode(level Level, levelStr, msg string, args []interface{}) {
-	l.mu.RLock()
-
-	if l.isLevelEnabled(level) {
-		buf := bytebufferpool.Get()
-
-		l.encoder.Encode(buf, levelStr, msg, args) // nolint:errcheck
-		l.output.Write(buf.Bytes())                // nolint:errcheck
-
-		bytebufferpool.Put(buf)
-	}
-
-	l.mu.RUnlock()
-}
-
 func (l *Logger) clone() *Logger {
 	cfgFields := make([]Field, len(l.cfg.Fields))
 	copy(cfgFields, l.cfg.Fields)
@@ -86,6 +89,7 @@ func (l *Logger) clone() *Logger {
 	l2.level = l.level
 	l2.output = l.output
 	l2.encoder = l.encoder.Copy()
+	l2.encodeOutput = l.encodeOutput
 
 	return l2
 }
@@ -153,52 +157,52 @@ func (l *Logger) IsLevelEnabled(level Level) bool {
 	return enabled
 }
 
+func (l *Logger) Print(msg ...interface{}) {
+	l.encodeOutput(PRINT, printLevelStr, "", msg)
+}
+
+func (l *Logger) Printf(msg string, args ...interface{}) {
+	l.encodeOutput(PRINT, printLevelStr, msg, args)
+}
+
 func (l *Logger) Fatal(msg ...interface{}) {
-	l.encode(FATAL, fatalLevelStr, "", msg)
+	l.encodeOutput(FATAL, fatalLevelStr, "", msg)
 	os.Exit(1)
 }
 
 func (l *Logger) Fatalf(msg string, args ...interface{}) {
-	l.encode(FATAL, fatalLevelStr, msg, args)
+	l.encodeOutput(FATAL, fatalLevelStr, msg, args)
 	os.Exit(1)
 }
 
 func (l *Logger) Error(msg ...interface{}) {
-	l.encode(ERROR, errorLevelStr, "", msg)
+	l.encodeOutput(ERROR, errorLevelStr, "", msg)
 }
 
 func (l *Logger) Errorf(msg string, args ...interface{}) {
-	l.encode(ERROR, errorLevelStr, msg, args)
+	l.encodeOutput(ERROR, errorLevelStr, msg, args)
 }
 
 func (l *Logger) Warning(msg ...interface{}) {
-	l.encode(WARNING, warningLevelStr, "", msg)
+	l.encodeOutput(WARNING, warningLevelStr, "", msg)
 }
 
 func (l *Logger) Warningf(msg string, args ...interface{}) {
-	l.encode(WARNING, warningLevelStr, msg, args)
+	l.encodeOutput(WARNING, warningLevelStr, msg, args)
 }
 
 func (l *Logger) Info(msg ...interface{}) {
-	l.encode(INFO, infoLevelStr, "", msg)
+	l.encodeOutput(INFO, infoLevelStr, "", msg)
 }
 
 func (l *Logger) Infof(msg string, args ...interface{}) {
-	l.encode(INFO, infoLevelStr, msg, args)
+	l.encodeOutput(INFO, infoLevelStr, msg, args)
 }
 
 func (l *Logger) Debug(msg ...interface{}) {
-	l.encode(DEBUG, debugLevelStr, "", msg)
+	l.encodeOutput(DEBUG, debugLevelStr, "", msg)
 }
 
 func (l *Logger) Debugf(msg string, args ...interface{}) {
-	l.encode(DEBUG, debugLevelStr, msg, args)
-}
-
-func (l *Logger) Print(msg ...interface{}) {
-	l.encode(PRINT, printLevelStr, "", msg)
-}
-
-func (l *Logger) Printf(msg string, args ...interface{}) {
-	l.encode(PRINT, printLevelStr, msg, args)
+	l.encodeOutput(DEBUG, debugLevelStr, msg, args)
 }

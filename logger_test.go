@@ -8,6 +8,8 @@ import (
 	"testing"
 )
 
+var levels = []Level{PRINT, FATAL, ERROR, WARNING, INFO, DEBUG}
+
 func newTestLogger() *Logger {
 	return New(DEBUG, ioutil.Discard)
 }
@@ -30,10 +32,11 @@ func Test_New(t *testing.T) {
 		t.Errorf("Logger.cfg == %v, want %v", l.cfg, wantCfg)
 	}
 
-	outputPtr := reflect.ValueOf(l.output).Pointer()
-	wantOutputPtr := reflect.ValueOf(output).Pointer()
+	if l.level != level {
+		t.Errorf("Logger.level == %d, want %d", l.level, level)
+	}
 
-	if outputPtr != wantOutputPtr {
+	if l.output != output {
 		t.Errorf("Logger.output == %p, want %p", l.output, output)
 	}
 
@@ -47,6 +50,32 @@ func Test_New(t *testing.T) {
 
 	if encoderCfg := l.encoder.Config(); !reflect.DeepEqual(encoderCfg, l.cfg) {
 		t.Errorf("Logger.enconder.Config() == %v, want %v", encoderCfg, l.cfg)
+	}
+
+	if l.encodeOutput == nil {
+		t.Fatal("Logger.encodeOutput is nil")
+	}
+}
+
+func TestLogger_encodeOutput(t *testing.T) {
+	output := new(bytes.Buffer)
+
+	l := newTestLogger()
+	l.SetOutput(output)
+	l.SetLevel(INFO)
+
+	l.encodeOutput(ERROR, infoLevelStr, "hello %s", []interface{}{"word"})
+
+	if output.Len() == 0 {
+		t.Error("enconded output has not been written")
+	}
+
+	output.Reset()
+
+	l.encodeOutput(DEBUG, debugLevelStr, "hello %s", []interface{}{"word"})
+
+	if output.Len() > 0 {
+		t.Error("enconded output has been written")
 	}
 }
 
@@ -157,7 +186,6 @@ func TestLogger_setFields(t *testing.T) { // nolint:funlen
 
 func TestLogger_isLevelEnabled(t *testing.T) {
 	l := newTestLogger()
-	levels := []Level{PRINT, FATAL, ERROR, WARNING, DEBUG}
 
 	for _, level := range levels {
 		l.SetLevel(level)
@@ -170,28 +198,6 @@ func TestLogger_isLevelEnabled(t *testing.T) {
 				t.Errorf("enabled (level: %d, current: %d) == %t, want %t", level, currentLevel, enabled, wantEnabled)
 			}
 		}
-	}
-}
-
-func TestLogger_encode(t *testing.T) {
-	output := new(bytes.Buffer)
-
-	l := newTestLogger()
-	l.SetOutput(output)
-	l.SetLevel(INFO)
-
-	l.encode(ERROR, infoLevelStr, "hello %s", []interface{}{"word"})
-
-	if output.Len() == 0 {
-		t.Error("enconded output has not been written")
-	}
-
-	output.Reset()
-
-	l.encode(DEBUG, debugLevelStr, "hello %s", []interface{}{"word"})
-
-	if output.Len() > 0 {
-		t.Error("enconded output has been written")
 	}
 }
 
@@ -225,6 +231,13 @@ func TestLogger_clone(t *testing.T) {
 
 	if l2.encoder == l1.encoder {
 		t.Error("encoder values has the same pointer")
+	}
+
+	l1EncodeOutputPtr := reflect.ValueOf(l1.encodeOutput).Pointer()
+	l2EncodeOutputPtr := reflect.ValueOf(l2.encodeOutput).Pointer()
+
+	if l2EncodeOutputPtr != l1EncodeOutputPtr {
+		t.Errorf("encodeOutput == %p, want %p", l2.encodeOutput, l1.encodeOutput)
 	}
 }
 
@@ -433,6 +446,163 @@ func TestLogger_IsLevelEnabled(t *testing.T) {
 
 	if l1.IsLevelEnabled(DEBUG) {
 		t.Error("level is enabled")
+	}
+}
+
+func TestLogger_Levels(t *testing.T) { // nolint:funlen
+	type args struct {
+		fn  func(msg ...interface{})
+		fnf func(msg string, args ...interface{})
+	}
+
+	type want struct {
+		level    Level
+		levelStr string
+	}
+
+	type loggerWrapper struct {
+		*Logger
+
+		encodeLevel    Level
+		encodeLevelStr string
+		encodeMsg      string
+		encodeArgs     []interface{}
+	}
+
+	l := &loggerWrapper{
+		Logger: newTestLogger(),
+	}
+	l.Logger.encodeOutput = func(level Level, levelStr, msg string, args []interface{}) {
+		l.encodeLevel = level
+		l.encodeLevelStr = levelStr
+		l.encodeMsg = msg
+		l.encodeArgs = args
+	}
+
+	resetLoggerWrapper := func(l *loggerWrapper) {
+		l.encodeLevel = invalid
+		l.encodeLevelStr = ""
+		l.encodeMsg = ""
+		l.encodeArgs = nil
+	}
+
+	tests := []struct {
+		name string
+		args args
+		want want
+	}{
+		{
+			name: "Print",
+			args: args{
+				fn:  l.Print,
+				fnf: l.Printf,
+			},
+			want: want{
+				level:    PRINT,
+				levelStr: printLevelStr,
+			},
+		},
+		// {
+		// 	name: "Fatal",
+		// 	args: args{
+		// 		fn:  l.Fatal,
+		// 		fnf: l.Fatalf,
+		// 	},
+		// 	want: want{
+		// 		level:    FATAL,
+		// 		levelStr: fatalLevelStr,
+		// 	},
+		// },
+		{
+			name: "Error",
+			args: args{
+				fn:  l.Error,
+				fnf: l.Errorf,
+			},
+			want: want{
+				level:    ERROR,
+				levelStr: errorLevelStr,
+			},
+		},
+		{
+			name: "Warning",
+			args: args{
+				fn:  l.Warning,
+				fnf: l.Warningf,
+			},
+			want: want{
+				level:    WARNING,
+				levelStr: warningLevelStr,
+			},
+		},
+		{
+			name: "Info",
+			args: args{
+				fn:  l.Info,
+				fnf: l.Infof,
+			},
+			want: want{
+				level:    INFO,
+				levelStr: infoLevelStr,
+			},
+		},
+		{
+			name: "Debug",
+			args: args{
+				fn:  l.Debug,
+				fnf: l.Debugf,
+			},
+			want: want{
+				level:    DEBUG,
+				levelStr: debugLevelStr,
+			},
+		},
+	}
+
+	assert := func(msg string, args []interface{}, want want) {
+		if l.encodeLevel != want.level {
+			t.Errorf("level == %d, want %d", l.encodeLevel, want.level)
+		}
+
+		if l.encodeLevelStr != want.levelStr {
+			t.Errorf("level string == %s, want %s", l.encodeLevelStr, want.levelStr)
+		}
+
+		if l.encodeMsg != msg {
+			t.Errorf("msg == %s, want %s", l.encodeMsg, msg)
+		}
+
+		if !reflect.DeepEqual(l.encodeArgs, args) {
+			t.Errorf("args == %s, want %s", l.encodeArgs, args)
+		}
+	}
+
+	for i := range tests {
+		test := tests[i]
+
+		t.Run(test.name, func(t *testing.T) {
+			t.Helper()
+
+			msg := ""
+			args := []interface{}{"Hello", "world"}
+
+			test.args.fn(args...)
+			assert(msg, args, test.want)
+		})
+
+		resetLoggerWrapper(l)
+
+		t.Run(test.name+"f", func(t *testing.T) {
+			t.Helper()
+
+			msg := "Hello %s"
+			args := []interface{}{"world"}
+
+			test.args.fnf(msg, args...)
+			assert(msg, args, test.want)
+		})
+
+		resetLoggerWrapper(l)
 	}
 }
 

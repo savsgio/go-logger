@@ -49,7 +49,7 @@ func (enc *EncoderText) SetConfig(cfg EncoderConfig) {
 	bytebufferpool.Put(buf)
 }
 
-func (enc *EncoderText) Encode(buf *bytebufferpool.ByteBuffer, level, msg string, args []interface{}) error {
+func (enc *EncoderText) Encode(buf *bytebufferpool.ByteBuffer, levelStr, msg string, args []interface{}) error {
 	now := time.Now()
 	if enc.cfg.UTC {
 		now = now.UTC()
@@ -65,9 +65,9 @@ func (enc *EncoderText) Encode(buf *bytebufferpool.ByteBuffer, level, msg string
 		buf.WriteString(sep) // nolint:errcheck
 	}
 
-	if level != "" {
-		buf.WriteString(level) // nolint:errcheck
-		buf.WriteString(sep)   // nolint:errcheck
+	if levelStr != "" {
+		buf.WriteString(levelStr) // nolint:errcheck
+		buf.WriteString(sep)      // nolint:errcheck
 	}
 
 	if enc.cfg.Shortfile || enc.cfg.Longfile {

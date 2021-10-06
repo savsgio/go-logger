@@ -7,6 +7,8 @@ import (
 	"github.com/valyala/bytebufferpool"
 )
 
+type encodeOutputFunc func(level Level, levelStr, msg string, args []interface{})
+
 type Level int
 
 type Flag int
@@ -29,18 +31,19 @@ type EncoderConfig struct {
 }
 
 type Logger struct {
-	mu      sync.RWMutex // ensures atomic writes; protects the following fields
-	cfg     EncoderConfig
-	level   Level
-	output  io.Writer
-	encoder Encoder
+	mu           sync.RWMutex // ensures atomic writes; protects the following fields
+	cfg          EncoderConfig
+	level        Level
+	output       io.Writer
+	encoder      Encoder
+	encodeOutput encodeOutputFunc
 }
 
 type Encoder interface {
 	Copy() Encoder
 	Config() EncoderConfig
 	SetConfig(cfg EncoderConfig)
-	Encode(buf *bytebufferpool.ByteBuffer, level, msg string, args []interface{}) error
+	Encode(buf *bytebufferpool.ByteBuffer, levelStr, msg string, args []interface{}) error
 }
 
 type EncoderBase struct {

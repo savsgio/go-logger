@@ -45,6 +45,14 @@ func IsLevelEnabled(level Level) bool {
 	return std.IsLevelEnabled(level)
 }
 
+func Print(msg ...interface{}) {
+	std.Print(msg...)
+}
+
+func Printf(msg string, args ...interface{}) {
+	std.Printf(msg, args...)
+}
+
 func Fatal(msg ...interface{}) {
 	std.Fatal(msg...)
 }
@@ -83,12 +91,4 @@ func Debug(msg ...interface{}) {
 
 func Debugf(msg string, args ...interface{}) {
 	std.Debugf(msg, args...)
-}
-
-func Print(msg ...interface{}) {
-	std.Print(msg...)
-}
-
-func Printf(msg string, args ...interface{}) {
-	std.Printf(msg, args...)
 }
