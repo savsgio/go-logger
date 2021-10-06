@@ -39,6 +39,7 @@ func New(level Level, output io.Writer, fields ...Field) *Logger {
 	l.output = output
 	l.encoder = enc
 	l.encodeOutput = newEncodeOutputFunc(l)
+	l.exit = os.Exit
 
 	l.SetFields(fields...)
 	l.SetFlags(LstdFlags)
@@ -90,6 +91,7 @@ func (l *Logger) clone() *Logger {
 	l2.output = l.output
 	l2.encoder = l.encoder.Copy()
 	l2.encodeOutput = l.encodeOutput
+	l2.exit = l.exit
 
 	return l2
 }
@@ -167,12 +169,12 @@ func (l *Logger) Printf(msg string, args ...interface{}) {
 
 func (l *Logger) Fatal(msg ...interface{}) {
 	l.encodeOutput(FATAL, fatalLevelStr, "", msg)
-	os.Exit(1)
+	l.exit(1)
 }
 
 func (l *Logger) Fatalf(msg string, args ...interface{}) {
 	l.encodeOutput(FATAL, fatalLevelStr, msg, args)
-	os.Exit(1)
+	l.exit(1)
 }
 
 func (l *Logger) Error(msg ...interface{}) {

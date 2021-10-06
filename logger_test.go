@@ -55,6 +55,13 @@ func Test_New(t *testing.T) {
 	if l.encodeOutput == nil {
 		t.Fatal("Logger.encodeOutput is nil")
 	}
+
+	loggerExitPtr := reflect.ValueOf(l.exit).Pointer()
+	osExitPtr := reflect.ValueOf(os.Exit).Pointer()
+
+	if loggerExitPtr != osExitPtr {
+		t.Errorf("exit == %p, want %p", l.exit, os.Exit)
+	}
 }
 
 func TestLogger_encodeOutput(t *testing.T) {
@@ -238,6 +245,13 @@ func TestLogger_clone(t *testing.T) {
 
 	if l2EncodeOutputPtr != l1EncodeOutputPtr {
 		t.Errorf("encodeOutput == %p, want %p", l2.encodeOutput, l1.encodeOutput)
+	}
+
+	l1ExitPtr := reflect.ValueOf(l1.exit).Pointer()
+	l2ExitPtr := reflect.ValueOf(l2.exit).Pointer()
+
+	if l2ExitPtr != l1ExitPtr {
+		t.Errorf("exit == %p, want %p", l2.exit, l1.exit)
 	}
 }
 
@@ -458,6 +472,7 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 	type want struct {
 		level    Level
 		levelStr string
+		exitCode int
 	}
 
 	type loggerWrapper struct {
@@ -467,10 +482,13 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 		encodeLevelStr string
 		encodeMsg      string
 		encodeArgs     []interface{}
+		fatalExitCode  int
 	}
 
 	l := &loggerWrapper{
-		Logger: newTestLogger(),
+		Logger:        newTestLogger(),
+		encodeLevel:   invalid,
+		fatalExitCode: -1,
 	}
 	l.Logger.encodeOutput = func(level Level, levelStr, msg string, args []interface{}) {
 		l.encodeLevel = level
@@ -478,12 +496,16 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 		l.encodeMsg = msg
 		l.encodeArgs = args
 	}
+	l.Logger.exit = func(code int) {
+		l.fatalExitCode = code
+	}
 
 	resetLoggerWrapper := func(l *loggerWrapper) {
 		l.encodeLevel = invalid
 		l.encodeLevelStr = ""
 		l.encodeMsg = ""
 		l.encodeArgs = nil
+		l.fatalExitCode = -1
 	}
 
 	tests := []struct {
@@ -500,19 +522,21 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			want: want{
 				level:    PRINT,
 				levelStr: printLevelStr,
+				exitCode: -1,
 			},
 		},
-		// {
-		// 	name: "Fatal",
-		// 	args: args{
-		// 		fn:  l.Fatal,
-		// 		fnf: l.Fatalf,
-		// 	},
-		// 	want: want{
-		// 		level:    FATAL,
-		// 		levelStr: fatalLevelStr,
-		// 	},
-		// },
+		{
+			name: "Fatal",
+			args: args{
+				fn:  l.Fatal,
+				fnf: l.Fatalf,
+			},
+			want: want{
+				level:    FATAL,
+				levelStr: fatalLevelStr,
+				exitCode: 1,
+			},
+		},
 		{
 			name: "Error",
 			args: args{
@@ -522,6 +546,7 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			want: want{
 				level:    ERROR,
 				levelStr: errorLevelStr,
+				exitCode: -1,
 			},
 		},
 		{
@@ -533,6 +558,7 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			want: want{
 				level:    WARNING,
 				levelStr: warningLevelStr,
+				exitCode: -1,
 			},
 		},
 		{
@@ -544,6 +570,7 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			want: want{
 				level:    INFO,
 				levelStr: infoLevelStr,
+				exitCode: -1,
 			},
 		},
 		{
@@ -555,6 +582,7 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			want: want{
 				level:    DEBUG,
 				levelStr: debugLevelStr,
+				exitCode: -1,
 			},
 		},
 	}
@@ -574,6 +602,10 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 
 		if !reflect.DeepEqual(l.encodeArgs, args) {
 			t.Errorf("args == %s, want %s", l.encodeArgs, args)
+		}
+
+		if l.fatalExitCode != want.exitCode {
+			t.Errorf("fatalExitCode == %d, want %d", l.fatalExitCode, want.exitCode)
 		}
 	}
 

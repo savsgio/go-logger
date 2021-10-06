@@ -9,6 +9,8 @@ import (
 
 type encodeOutputFunc func(level Level, levelStr, msg string, args []interface{})
 
+type exitFunc func(code int)
+
 type Level int
 
 type Flag int
@@ -37,6 +39,7 @@ type Logger struct {
 	output       io.Writer
 	encoder      Encoder
 	encodeOutput encodeOutputFunc
+	exit         exitFunc
 }
 
 type Encoder interface {
