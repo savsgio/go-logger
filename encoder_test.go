@@ -69,7 +69,6 @@ func TestEncoderBase_getFileCaller(t *testing.T) { // nolint:funlen
 	}
 
 	enc := newTestEncoderBase()
-	cfg := newTestEncoderConfig()
 
 	tests := []struct {
 		name string
@@ -134,6 +133,7 @@ func TestEncoderBase_getFileCaller(t *testing.T) { // nolint:funlen
 		t.Run(test.name, func(t *testing.T) {
 			t.Helper()
 
+			cfg := newTestEncoderConfig()
 			cfg.Shortfile = test.args.short
 			cfg.Longfile = test.args.long
 			cfg.calldepth = test.args.calldepth
@@ -285,7 +285,7 @@ func TestEncoderBase_WriteMessage(t *testing.T) { // nolint:funlen
 				args: []interface{}{"Hello", "world"},
 			},
 			want: want{
-				message: "Hello world",
+				message: "Helloworld",
 			},
 		},
 	}
