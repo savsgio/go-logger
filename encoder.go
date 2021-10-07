@@ -86,6 +86,8 @@ func (enc *EncoderBase) WriteMessage(buf *bytebufferpool.ByteBuffer, msg string,
 	case lenArgs == 1:
 		if str, ok := args[0].(string); ok {
 			buf.WriteString(str) // nolint:errcheck
+
+			return
 		}
 
 		fallthrough

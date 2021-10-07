@@ -4,6 +4,8 @@ import "strings"
 
 func ParseLevel(levelStr string) (level Level, err error) {
 	switch strings.ToUpper(levelStr) {
+	case printLevelStr:
+		level = PRINT
 	case fatalLevelStr:
 		level = FATAL
 	case errorLevelStr:

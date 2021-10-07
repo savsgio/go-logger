@@ -690,23 +690,100 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 	testLoggerLevels(t, l, testCases)
 }
 
-func BenchmarkInfo(b *testing.B) {
-	l := New(INFO, ioutil.Discard)
+func BenchmarkLogger_Levels(b *testing.B) { // nolint:funlen
+	l := newTestLogger()
 	l.SetEncoder(NewEncoderJSON())
-	l.SetFlags(Ldatetime | Ltimestamp)
+	// l.SetFlags(Ltimestamp)
 	l.SetFields(Field{Key: "hola", Value: 1}, Field{Key: "adios", Value: 2})
+	l.SetLevel(DEBUG)
+
+	l.exit = func(code int) {}
+
+	benchs := []struct {
+		name string
+		args testLoggerLevelArgs
+	}{
+		{
+			name: "Print",
+			args: testLoggerLevelArgs{
+				fn:  l.Print,
+				fnf: l.Printf,
+			},
+		},
+		{
+			name: "Fatal",
+			args: testLoggerLevelArgs{
+				fn:  l.Fatal,
+				fnf: l.Fatalf,
+			},
+		},
+		{
+			name: "Error",
+			args: testLoggerLevelArgs{
+				fn:  l.Error,
+				fnf: l.Errorf,
+			},
+		},
+		{
+			name: "Warning",
+			args: testLoggerLevelArgs{
+				fn:  l.Warning,
+				fnf: l.Warningf,
+			},
+		},
+		{
+			name: "Info",
+			args: testLoggerLevelArgs{
+				fn:  l.Info,
+				fnf: l.Infof,
+			},
+		},
+		{
+			name: "Debug",
+			args: testLoggerLevelArgs{
+				fn:  l.Debug,
+				fnf: l.Debugf,
+			},
+		},
+	}
 
 	b.Run("lineal", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			l.Infof("hello %s", "world")
+		for i := range benchs {
+			bench := benchs[i]
+
+			b.Run(bench.name, func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					bench.args.fn("hello world")
+				}
+			})
+
+			b.Run(bench.name+"f", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					bench.args.fnf("hello %s", " world")
+				}
+			})
 		}
 	})
 
 	b.Run("parallel", func(b *testing.B) {
-		b.RunParallel(func(pb *testing.PB) {
-			for pb.Next() {
-				l.Infof("hello %s", "world")
-			}
-		})
+		for i := range benchs {
+			bench := benchs[i]
+
+			b.Run(bench.name, func(b *testing.B) {
+				b.RunParallel(func(pb *testing.PB) {
+					for pb.Next() {
+						bench.args.fn("hello world")
+					}
+				})
+			})
+
+			b.Run(bench.name+"f", func(b *testing.B) {
+				b.RunParallel(func(pb *testing.PB) {
+					for pb.Next() {
+						bench.args.fnf("hello %s", " world")
+					}
+				})
+			})
+		}
 	})
 }

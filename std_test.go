@@ -6,7 +6,6 @@ import (
 
 func TestLogger_std_WithFields(t *testing.T) {
 	testLoggerWithFields(t, std, WithFields)
-
 }
 
 func TestLogger_std_SetFields(t *testing.T) {
