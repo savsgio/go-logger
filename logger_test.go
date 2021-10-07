@@ -2,6 +2,7 @@ package logger
 
 import (
 	"bytes"
+	"io"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -9,6 +10,23 @@ import (
 )
 
 var levels = []Level{PRINT, FATAL, ERROR, WARNING, INFO, DEBUG}
+
+type testLoggerLevelArgs struct {
+	fn  func(msg ...interface{})
+	fnf func(msg string, args ...interface{})
+}
+
+type testLoggerLevelWant struct {
+	level    Level
+	levelStr string
+	exitCode int
+}
+
+type testLoggerLevelCase struct {
+	name string
+	args testLoggerLevelArgs
+	want testLoggerLevelWant
+}
 
 func newTestLogger() *Logger {
 	return New(DEBUG, ioutil.Discard)
@@ -255,9 +273,10 @@ func TestLogger_clone(t *testing.T) {
 	}
 }
 
-func TestLogger_WithFields(t *testing.T) {
-	l1 := newTestLogger()
-	l2 := l1.WithFields(Field{"key", "value"})
+func testLoggerWithFields(t *testing.T, l1 *Logger, withFieldsFunc func(fields ...Field) *Logger) {
+	t.Helper()
+
+	l2 := withFieldsFunc(Field{"key", "value"})
 
 	l1TotalFields := len(l1.cfg.Fields)
 	l2TotalFields := len(l2.cfg.Fields)
@@ -267,22 +286,35 @@ func TestLogger_WithFields(t *testing.T) {
 	}
 }
 
-func TestLogger_SetFields(t *testing.T) {
-	fields := []Field{{"key", "value"}, {"foo", "bar"}}
+func TestLogger_WithFields(t *testing.T) {
 	l1 := newTestLogger()
+	testLoggerWithFields(t, l1, l1.WithFields)
+}
 
-	beforeTotalFields := len(l1.cfg.Fields)
+func testLoggerSetFields(t *testing.T, l *Logger, setFieldsFunc func(fields ...Field)) {
+	t.Helper()
 
-	l1.SetFields(fields...)
+	fields := []Field{{"key", "value"}, {"foo", "bar"}}
 
-	afterTotalFields := len(l1.cfg.Fields)
+	beforeTotalFields := len(l.cfg.Fields)
+
+	setFieldsFunc(fields...)
+
+	afterTotalFields := len(l.cfg.Fields)
 
 	if beforeTotalFields == afterTotalFields {
 		t.Errorf("fields == %d, want %d", afterTotalFields, beforeTotalFields+len(fields))
 	}
 }
 
-func TestLogger_SetFlags(t *testing.T) { // nolint:funlen
+func TestLogger_SetFields(t *testing.T) {
+	l := newTestLogger()
+	testLoggerSetFields(t, l, l.SetFields)
+}
+
+func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) { // nolint:funlen
+	t.Helper()
+
 	type args struct {
 		flag Flag
 	}
@@ -290,8 +322,6 @@ func TestLogger_SetFlags(t *testing.T) { // nolint:funlen
 	type want struct {
 		cfg EncoderConfig
 	}
-
-	l := newTestLogger()
 
 	tests := []struct {
 		name string
@@ -380,7 +410,7 @@ func TestLogger_SetFlags(t *testing.T) { // nolint:funlen
 		t.Run(test.name, func(t *testing.T) {
 			t.Helper()
 
-			l.SetFlags(test.args.flag)
+			setFlagsFunc(test.args.flag)
 
 			if l.cfg.Flag != test.want.cfg.Flag {
 				t.Errorf("Flag == %d, want %d", l.cfg.Flag, test.want.cfg.Flag)
@@ -413,67 +443,87 @@ func TestLogger_SetFlags(t *testing.T) { // nolint:funlen
 	}
 }
 
-func TestLogger_SetLevel(t *testing.T) {
+func TestLogger_SetFlags(t *testing.T) {
+	l := newTestLogger()
+	testLoggerSetFlags(t, l, l.SetFlags)
+}
+
+func testLoggerSetLevel(t *testing.T, l *Logger, setLevelFunc func(level Level)) {
+	t.Helper()
+
 	level := DEBUG
 
-	l1 := newTestLogger()
-	l1.SetLevel(level)
+	setLevelFunc(level)
 
-	if l1.level != level {
-		t.Errorf("level == %d, want %d", l1.level, level)
+	if l.level != level {
+		t.Errorf("level == %d, want %d", l.level, level)
+	}
+}
+
+func TestLogger_SetLevel(t *testing.T) {
+	l := newTestLogger()
+	testLoggerSetLevel(t, l, l.SetLevel)
+}
+
+func testLoggerSetOutput(t *testing.T, l *Logger, setOutputFunc func(output io.Writer)) {
+	t.Helper()
+
+	output := new(bytes.Buffer)
+
+	setOutputFunc(output)
+
+	if l.output != output {
+		t.Errorf("output == %p, want %p", l.output, output)
 	}
 }
 
 func TestLogger_SetOutput(t *testing.T) {
-	output := new(bytes.Buffer)
+	l := newTestLogger()
+	testLoggerSetOutput(t, l, l.SetOutput)
+}
 
-	l1 := newTestLogger()
-	l1.SetOutput(output)
+func testLoggerSetEncoder(t *testing.T, l *Logger, setEncoderFunc func(enc Encoder)) {
+	t.Helper()
 
-	if l1.output != output {
-		t.Errorf("output == %p, want %p", l1.output, output)
+	encoder := NewEncoderJSON()
+
+	setEncoderFunc(encoder)
+
+	if l.encoder != encoder {
+		t.Errorf("encoder == %p, want %p", l.encoder, encoder)
 	}
 }
 
 func TestLogger_SetEncoder(t *testing.T) {
-	encoder := NewEncoderJSON()
-
-	l1 := newTestLogger()
-	l1.SetEncoder(encoder)
-
-	if l1.encoder != encoder {
-		t.Errorf("encoder == %p, want %p", l1.encoder, encoder)
-	}
+	l := newTestLogger()
+	testLoggerSetEncoder(t, l, l.SetEncoder)
 }
 
-func TestLogger_IsLevelEnabled(t *testing.T) {
-	l1 := newTestLogger()
-	l1.SetLevel(ERROR)
+func testLoggerIsLevelEnabled(t *testing.T, l *Logger, isLevelEnabledFunc func(level Level) bool) {
+	t.Helper()
 
-	if !l1.IsLevelEnabled(FATAL) {
+	l.SetLevel(ERROR)
+
+	if !isLevelEnabledFunc(FATAL) {
 		t.Error("level is not enabled")
 	}
 
-	if !l1.IsLevelEnabled(ERROR) {
+	if !isLevelEnabledFunc(ERROR) {
 		t.Error("level is not enabled")
 	}
 
-	if l1.IsLevelEnabled(DEBUG) {
+	if isLevelEnabledFunc(DEBUG) {
 		t.Error("level is enabled")
 	}
 }
 
-func TestLogger_Levels(t *testing.T) { // nolint:funlen
-	type args struct {
-		fn  func(msg ...interface{})
-		fnf func(msg string, args ...interface{})
-	}
+func TestLogger_IsLevelEnabled(t *testing.T) {
+	l := newTestLogger()
+	testLoggerIsLevelEnabled(t, l, l.IsLevelEnabled)
+}
 
-	type want struct {
-		level    Level
-		levelStr string
-		exitCode int
-	}
+func testLoggerLevels(t *testing.T, l *Logger, testCases []testLoggerLevelCase) { // nolint:funlen
+	t.Helper()
 
 	type loggerWrapper struct {
 		*Logger
@@ -485,132 +535,53 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 		fatalExitCode  int
 	}
 
-	l := &loggerWrapper{
-		Logger:        newTestLogger(),
+	lw := &loggerWrapper{
+		Logger:        l,
 		encodeLevel:   invalid,
 		fatalExitCode: -1,
 	}
-	l.Logger.encodeOutput = func(level Level, levelStr, msg string, args []interface{}) {
-		l.encodeLevel = level
-		l.encodeLevelStr = levelStr
-		l.encodeMsg = msg
-		l.encodeArgs = args
+	lw.Logger.encodeOutput = func(level Level, levelStr, msg string, args []interface{}) {
+		lw.encodeLevel = level
+		lw.encodeLevelStr = levelStr
+		lw.encodeMsg = msg
+		lw.encodeArgs = args
 	}
-	l.Logger.exit = func(code int) {
-		l.fatalExitCode = code
-	}
-
-	resetLoggerWrapper := func(l *loggerWrapper) {
-		l.encodeLevel = invalid
-		l.encodeLevelStr = ""
-		l.encodeMsg = ""
-		l.encodeArgs = nil
-		l.fatalExitCode = -1
+	lw.Logger.exit = func(code int) {
+		lw.fatalExitCode = code
 	}
 
-	tests := []struct {
-		name string
-		args args
-		want want
-	}{
-		{
-			name: "Print",
-			args: args{
-				fn:  l.Print,
-				fnf: l.Printf,
-			},
-			want: want{
-				level:    PRINT,
-				levelStr: printLevelStr,
-				exitCode: -1,
-			},
-		},
-		{
-			name: "Fatal",
-			args: args{
-				fn:  l.Fatal,
-				fnf: l.Fatalf,
-			},
-			want: want{
-				level:    FATAL,
-				levelStr: fatalLevelStr,
-				exitCode: 1,
-			},
-		},
-		{
-			name: "Error",
-			args: args{
-				fn:  l.Error,
-				fnf: l.Errorf,
-			},
-			want: want{
-				level:    ERROR,
-				levelStr: errorLevelStr,
-				exitCode: -1,
-			},
-		},
-		{
-			name: "Warning",
-			args: args{
-				fn:  l.Warning,
-				fnf: l.Warningf,
-			},
-			want: want{
-				level:    WARNING,
-				levelStr: warningLevelStr,
-				exitCode: -1,
-			},
-		},
-		{
-			name: "Info",
-			args: args{
-				fn:  l.Info,
-				fnf: l.Infof,
-			},
-			want: want{
-				level:    INFO,
-				levelStr: infoLevelStr,
-				exitCode: -1,
-			},
-		},
-		{
-			name: "Debug",
-			args: args{
-				fn:  l.Debug,
-				fnf: l.Debugf,
-			},
-			want: want{
-				level:    DEBUG,
-				levelStr: debugLevelStr,
-				exitCode: -1,
-			},
-		},
+	resetLoggerWrapper := func(lw *loggerWrapper) {
+		lw.encodeLevel = invalid
+		lw.encodeLevelStr = ""
+		lw.encodeMsg = ""
+		lw.encodeArgs = nil
+		lw.fatalExitCode = -1
 	}
 
-	assert := func(msg string, args []interface{}, want want) {
-		if l.encodeLevel != want.level {
-			t.Errorf("level == %d, want %d", l.encodeLevel, want.level)
+	assert := func(msg string, args []interface{}, want testLoggerLevelWant) {
+		if lw.encodeLevel != want.level {
+			t.Errorf("level == %d, want %d", lw.encodeLevel, want.level)
 		}
 
-		if l.encodeLevelStr != want.levelStr {
-			t.Errorf("level string == %s, want %s", l.encodeLevelStr, want.levelStr)
+		if lw.encodeLevelStr != want.levelStr {
+			t.Errorf("level string == %s, want %s", lw.encodeLevelStr, want.levelStr)
 		}
 
-		if l.encodeMsg != msg {
-			t.Errorf("msg == %s, want %s", l.encodeMsg, msg)
+		if lw.encodeMsg != msg {
+			t.Errorf("msg == %s, want %s", lw.encodeMsg, msg)
 		}
 
-		if !reflect.DeepEqual(l.encodeArgs, args) {
-			t.Errorf("args == %s, want %s", l.encodeArgs, args)
+		if !reflect.DeepEqual(lw.encodeArgs, args) {
+			t.Errorf("args == %s, want %s", lw.encodeArgs, args)
 		}
 
-		if l.fatalExitCode != want.exitCode {
-			t.Errorf("fatalExitCode == %d, want %d", l.fatalExitCode, want.exitCode)
+		if lw.fatalExitCode != want.exitCode {
+			t.Errorf("fatalExitCode == %d, want %d", lw.fatalExitCode, want.exitCode)
 		}
 	}
 
-	for i := range tests {
-		test := tests[i]
+	for i := range testCases {
+		test := testCases[i]
 
 		t.Run(test.name, func(t *testing.T) {
 			t.Helper()
@@ -622,7 +593,7 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			assert(msg, args, test.want)
 		})
 
-		resetLoggerWrapper(l)
+		resetLoggerWrapper(lw)
 
 		t.Run(test.name+"f", func(t *testing.T) {
 			t.Helper()
@@ -634,8 +605,89 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			assert(msg, args, test.want)
 		})
 
-		resetLoggerWrapper(l)
+		resetLoggerWrapper(lw)
 	}
+}
+
+func TestLogger_Levels(t *testing.T) { // nolint:funlen
+	l := newTestLogger()
+
+	testCases := []testLoggerLevelCase{
+		{
+			name: "Print",
+			args: testLoggerLevelArgs{
+				fn:  l.Print,
+				fnf: l.Printf,
+			},
+			want: testLoggerLevelWant{
+				level:    PRINT,
+				levelStr: printLevelStr,
+				exitCode: -1,
+			},
+		},
+		{
+			name: "Fatal",
+			args: testLoggerLevelArgs{
+				fn:  l.Fatal,
+				fnf: l.Fatalf,
+			},
+			want: testLoggerLevelWant{
+				level:    FATAL,
+				levelStr: fatalLevelStr,
+				exitCode: 1,
+			},
+		},
+		{
+			name: "Error",
+			args: testLoggerLevelArgs{
+				fn:  l.Error,
+				fnf: l.Errorf,
+			},
+			want: testLoggerLevelWant{
+				level:    ERROR,
+				levelStr: errorLevelStr,
+				exitCode: -1,
+			},
+		},
+		{
+			name: "Warning",
+			args: testLoggerLevelArgs{
+				fn:  l.Warning,
+				fnf: l.Warningf,
+			},
+			want: testLoggerLevelWant{
+				level:    WARNING,
+				levelStr: warningLevelStr,
+				exitCode: -1,
+			},
+		},
+		{
+			name: "Info",
+			args: testLoggerLevelArgs{
+				fn:  l.Info,
+				fnf: l.Infof,
+			},
+			want: testLoggerLevelWant{
+				level:    INFO,
+				levelStr: infoLevelStr,
+				exitCode: -1,
+			},
+		},
+		{
+			name: "Debug",
+			args: testLoggerLevelArgs{
+				fn:  l.Debug,
+				fnf: l.Debugf,
+			},
+			want: testLoggerLevelWant{
+				level:    DEBUG,
+				levelStr: debugLevelStr,
+				exitCode: -1,
+			},
+		},
+	}
+
+	testLoggerLevels(t, l, testCases)
 }
 
 func BenchmarkInfo(b *testing.B) {
