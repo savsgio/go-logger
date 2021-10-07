@@ -21,7 +21,6 @@ go get github.com/savsgio/go-logger/v3
 - 1.15.x
 - 1.14.x
 - 1.13.x
-- 1.12.x
 
 ## Benchmarks
 
