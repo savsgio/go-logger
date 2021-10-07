@@ -97,7 +97,7 @@ func (enc *EncoderBase) WriteMessage(buf *bytebufferpool.ByteBuffer, msg string,
 }
 
 func (enc *EncoderBase) WriteNewLine(buf *bytebufferpool.ByteBuffer) {
-	if buf.B[buf.Len()-1] != '\n' {
+	if length := buf.Len(); length > 0 && buf.B[length-1] != '\n' {
 		buf.WriteByte('\n') // nolint:errcheck
 	}
 }
