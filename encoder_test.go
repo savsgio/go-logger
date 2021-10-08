@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path"
 	"reflect"
+	"regexp"
 	"runtime"
 	"strconv"
 	"testing"
@@ -11,6 +12,64 @@ import (
 
 	"github.com/valyala/bytebufferpool"
 )
+
+const (
+	datetimeRegex   = `([2-9](\d{3})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})Z)`
+	timestampRegex  = `(\d+)`
+	levelRegex      = `([A-Z]+)`
+	fileCallerRegex = `((.*)\.go\:\d+)`
+	fieldsKVRegex   = `((\"(.*)\"\:\"(.*)\"\.?)+)`
+	fieldsJSONRegex = `(\{` + fieldsKVRegex + `\})`
+	messageRegex    = `(.*)`
+)
+
+type testEncodeArgs struct {
+	cfg      EncoderConfig
+	levelStr string
+	msg      string
+	args     []interface{}
+}
+
+type testEncodeWant struct {
+	lineRegexExpr string
+}
+
+type testEncodeCase struct {
+	args testEncodeArgs
+	want testEncodeWant
+}
+
+func testEncoderEncode(t *testing.T, enc Encoder, testCases []testEncodeCase) {
+	t.Helper()
+
+	for i := range testCases {
+		test := testCases[i]
+
+		t.Run("", func(t *testing.T) {
+			t.Helper()
+
+			buf := bytebufferpool.Get()
+			defer bytebufferpool.Put(buf)
+
+			cfg := test.args.cfg
+			cfg.calldepth = 4
+
+			enc.SetConfig(cfg)
+
+			if err := enc.Encode(buf, test.args.levelStr, test.args.msg, test.args.args); err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			re := regexp.MustCompile(test.want.lineRegexExpr)
+
+			if line := buf.String(); !re.MatchString(line) {
+				t.Errorf("line == %s, want regex exp %s", line, test.want.lineRegexExpr)
+			}
+
+			buf.Reset()
+		})
+	}
+}
 
 func newTestEncoderConfig() EncoderConfig {
 	return EncoderConfig{}
@@ -21,6 +80,32 @@ func newTestEncoderBase() *EncoderBase {
 	enc.SetConfig(newTestEncoderConfig())
 
 	return enc
+}
+
+func Test_newEncoderBase(t *testing.T) {
+	if enc := newEncoderBase(); enc == nil {
+		t.Error("return nil")
+	}
+}
+
+func TestEncoderBase_Copy(t *testing.T) {
+	enc := newTestEncoderBase()
+	copyEnc := enc.Copy()
+
+	encPtr := reflect.ValueOf(enc).Pointer()
+	copyEncPtr := reflect.ValueOf(copyEnc).Pointer()
+
+	if copyEncPtr == encPtr {
+		t.Error("the copy has the same pointer than original")
+	}
+
+	if !reflect.DeepEqual(copyEnc.cfg, enc.cfg) {
+		t.Errorf("cfg == %v, want %v", copyEnc.cfg, enc.cfg)
+	}
+
+	if copyEnc.fieldsEncoded != enc.fieldsEncoded {
+		t.Errorf("fieldsEncoded == %s, want %s", copyEnc.fieldsEncoded, enc.fieldsEncoded)
+	}
 }
 
 func TestEncoderBase_Config(t *testing.T) {
@@ -42,6 +127,15 @@ func TestEncoderBase_SetConfig(t *testing.T) {
 
 	if !reflect.DeepEqual(enc.cfg, cfg) {
 		t.Errorf("cfg == %v, want %v", enc.cfg, cfg)
+	}
+}
+
+func TestEncoderBase_FieldsEnconded(t *testing.T) {
+	enc := newTestEncoderBase()
+	enc.fieldsEncoded = "v1 - v2 - v3"
+
+	if fieldsEncoded := enc.FieldsEnconded(); enc.fieldsEncoded != fieldsEncoded {
+		t.Errorf("fieldsEncoded == %s, want %s", enc.fieldsEncoded, fieldsEncoded)
 	}
 }
 
@@ -285,7 +379,7 @@ func TestEncoderBase_WriteMessage(t *testing.T) { // nolint:funlen
 				args: []interface{}{"Hello", "world"},
 			},
 			want: want{
-				message: "Helloworld",
+				message: fmt.Sprint("Hello", "world"),
 			},
 		},
 	}

@@ -9,12 +9,28 @@ import (
 	"github.com/valyala/bytebufferpool"
 )
 
+func newEncoderBase() *EncoderBase {
+	return new(EncoderBase)
+}
+
+func (enc *EncoderBase) Copy() *EncoderBase {
+	copyEnc := newEncoderBase()
+	copyEnc.cfg = enc.cfg
+	copyEnc.fieldsEncoded = enc.fieldsEncoded
+
+	return copyEnc
+}
+
 func (enc *EncoderBase) Config() EncoderConfig {
 	return enc.cfg
 }
 
 func (enc *EncoderBase) SetConfig(cfg EncoderConfig) {
 	enc.cfg = cfg
+}
+
+func (enc *EncoderBase) FieldsEnconded() string {
+	return enc.fieldsEncoded
 }
 
 func (enc *EncoderBase) SetFieldsEnconded(fieldsEncoded string) {

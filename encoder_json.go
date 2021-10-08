@@ -12,7 +12,7 @@ func NewEncoderJSON() *EncoderJSON {
 
 func (enc *EncoderJSON) Copy() Encoder {
 	copyEnc := NewEncoderJSON()
-	copyEnc.cfg = enc.cfg
+	copyEnc.EncoderBase = *enc.EncoderBase.Copy()
 
 	return copyEnc
 }

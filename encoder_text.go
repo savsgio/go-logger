@@ -6,7 +6,7 @@ import (
 	"github.com/valyala/bytebufferpool"
 )
 
-const sep = " - "
+const sepText = " - "
 
 func NewEncoderText() *EncoderText {
 	return new(EncoderText)
@@ -14,7 +14,7 @@ func NewEncoderText() *EncoderText {
 
 func (enc *EncoderText) Copy() Encoder {
 	copyEnc := NewEncoderText()
-	copyEnc.cfg = enc.cfg
+	copyEnc.EncoderBase = *enc.EncoderBase.Copy()
 
 	return copyEnc
 }
@@ -31,7 +31,7 @@ func (enc *EncoderText) SetConfig(cfg EncoderConfig) {
 
 	for i, field := range enc.cfg.Fields {
 		if i > 0 {
-			buf.WriteString(", ") // nolint:errcheck
+			buf.WriteString(",") // nolint:errcheck
 		}
 
 		buf.WriteString("\"")      // nolint:errcheck
@@ -41,8 +41,8 @@ func (enc *EncoderText) SetConfig(cfg EncoderConfig) {
 		buf.WriteString("\"") // nolint:errcheck
 	}
 
-	buf.WriteString("}") // nolint:errcheck
-	buf.WriteString(sep) // nolint:errcheck
+	buf.WriteString("}")     // nolint:errcheck
+	buf.WriteString(sepText) // nolint:errcheck
 
 	enc.SetFieldsEnconded(buf.String())
 
@@ -57,22 +57,22 @@ func (enc *EncoderText) Encode(buf *bytebufferpool.ByteBuffer, levelStr, msg str
 
 	if enc.cfg.Datetime {
 		enc.WriteDatetime(buf, now)
-		buf.WriteString(sep) // nolint:errcheck
+		buf.WriteString(sepText) // nolint:errcheck
 	}
 
 	if enc.cfg.Timestamp {
 		enc.WriteTimestamp(buf, now)
-		buf.WriteString(sep) // nolint:errcheck
+		buf.WriteString(sepText) // nolint:errcheck
 	}
 
 	if levelStr != "" {
 		buf.WriteString(levelStr) // nolint:errcheck
-		buf.WriteString(sep)      // nolint:errcheck
+		buf.WriteString(sepText)  // nolint:errcheck
 	}
 
 	if enc.cfg.Shortfile || enc.cfg.Longfile {
 		enc.WriteFileCaller(buf)
-		buf.WriteString(sep) // nolint:errcheck
+		buf.WriteString(sepText) // nolint:errcheck
 	}
 
 	enc.WriteFieldsEnconded(buf)
