@@ -25,7 +25,11 @@ func newEncodeOutputFunc(l *Logger) encodeOutputFunc {
 }
 
 // New create new instance of Logger.
-func New(level Level, output io.Writer, fields ...Field) *Logger {
+func New(level Level, output io.Writer, fields ...Field) (*Logger, error) {
+	if level < PRINT || level > DEBUG {
+		return nil, ErrInvalidLevel
+	}
+
 	cfg := EncoderConfig{
 		calldepth: calldepth,
 	}
@@ -44,7 +48,7 @@ func New(level Level, output io.Writer, fields ...Field) *Logger {
 	l.SetFields(fields...)
 	l.SetFlags(LstdFlags)
 
-	return l
+	return l, nil
 }
 
 func (l *Logger) getField(key string) *Field {

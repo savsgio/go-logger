@@ -2,6 +2,7 @@ package logger
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"io/ioutil"
 	"os"
@@ -29,15 +30,24 @@ type testLoggerLevelCase struct {
 }
 
 func newTestLogger() *Logger {
-	return New(DEBUG, ioutil.Discard)
+	l, _ := New(DEBUG, ioutil.Discard)
+
+	return l
 }
 
-func Test_New(t *testing.T) {
+func Test_New(t *testing.T) { // nolint:cyclop
 	level := INFO
 	output := os.Stderr
 	fields := []Field{{"key", "value"}}
 
-	l := New(level, output, fields...)
+	if _, err := New(invalid, output, fields...); !errors.Is(err, ErrInvalidLevel) {
+		t.Fatalf("expected error: %v", ErrInvalidLevel)
+	}
+
+	l, err := New(level, output, fields...)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	wantCfg := EncoderConfig{
 		Fields:    fields,

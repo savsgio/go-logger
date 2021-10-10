@@ -94,8 +94,22 @@ func TestEncoderJSON_SetConfig(t *testing.T) {
 	}
 }
 
-func TestEncoderJSON_Encode(t *testing.T) {
+func TestEncoderJSON_Encode(t *testing.T) { // nolint:funlen,dupl
 	testCases := []testEncodeCase{
+		{
+			args: testEncodeArgs{
+				cfg:      EncoderConfig{},
+				levelStr: debugLevelStr,
+				msg:      "Hello %s",
+				args:     []interface{}{"world"},
+			},
+			want: testEncodeWant{
+				lineRegexExpr: fmt.Sprintf(
+					`^{"level":"%s","message":"%s"}\n$`,
+					levelRegex, messageRegex,
+				),
+			},
+		},
 		{
 			args: testEncodeArgs{
 				cfg: EncoderConfig{
@@ -134,6 +148,27 @@ func TestEncoderJSON_Encode(t *testing.T) {
 				lineRegexExpr: fmt.Sprintf(
 					`^{"datetime":"%s","timestamp":"%s","level":"%s","file":"%s",%s,"message":"%s"}\n$`,
 					datetimeRegex, timestampRegex, levelRegex, fileCallerRegex, fieldsKVRegex, messageRegex,
+				),
+			},
+		},
+		{ // print/printf case
+			args: testEncodeArgs{
+				cfg: EncoderConfig{
+					Fields:    []Field{{"foo", "bar"}},
+					UTC:       true,
+					Datetime:  true,
+					Timestamp: true,
+					Shortfile: true,
+					Longfile:  true,
+				},
+				levelStr: printLevelStr,
+				msg:      "Hello %s",
+				args:     []interface{}{"world"},
+			},
+			want: testEncodeWant{
+				lineRegexExpr: fmt.Sprintf(
+					`^{"datetime":"%s","timestamp":"%s","file":"%s",%s,"message":"%s"}\n$`,
+					datetimeRegex, timestampRegex, fileCallerRegex, fieldsKVRegex, messageRegex,
 				),
 			},
 		},

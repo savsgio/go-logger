@@ -8,7 +8,7 @@ import (
 var std = newStd()
 
 func newStd() *Logger {
-	l := New(INFO, os.Stderr)
+	l, _ := New(INFO, os.Stderr)
 	l.setCalldepth(calldepth + 1)
 
 	return l

@@ -94,8 +94,22 @@ func TestEncoderText_SetConfig(t *testing.T) {
 	}
 }
 
-func TestEncoderText_Encode(t *testing.T) {
+func TestEncoderText_Encode(t *testing.T) { // nolint:funlen,dupl
 	testCases := []testEncodeCase{
+		{
+			args: testEncodeArgs{
+				cfg:      EncoderConfig{},
+				levelStr: debugLevelStr,
+				msg:      "Hello %s",
+				args:     []interface{}{"world"},
+			},
+			want: testEncodeWant{
+				lineRegexExpr: fmt.Sprintf(
+					"^%s - %s\n$",
+					levelRegex, messageRegex,
+				),
+			},
+		},
 		{
 			args: testEncodeArgs{
 				cfg: EncoderConfig{
@@ -134,6 +148,27 @@ func TestEncoderText_Encode(t *testing.T) {
 				lineRegexExpr: fmt.Sprintf(
 					"^%s - %s - %s - %s - %s - %s\n$",
 					datetimeRegex, timestampRegex, levelRegex, fileCallerRegex, fieldsJSONRegex, messageRegex,
+				),
+			},
+		},
+		{ // print/printf case
+			args: testEncodeArgs{
+				cfg: EncoderConfig{
+					Fields:    []Field{{"foo", "bar"}},
+					UTC:       true,
+					Datetime:  true,
+					Timestamp: true,
+					Shortfile: true,
+					Longfile:  true,
+				},
+				levelStr: printLevelStr,
+				msg:      "Hello %s",
+				args:     []interface{}{"world"},
+			},
+			want: testEncodeWant{
+				lineRegexExpr: fmt.Sprintf(
+					"^%s - %s - %s - %s - %s\n$",
+					datetimeRegex, timestampRegex, fileCallerRegex, fieldsJSONRegex, messageRegex,
 				),
 			},
 		},
