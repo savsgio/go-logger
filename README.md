@@ -6,7 +6,7 @@
 [![GoDev](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/github.com/savsgio/go-logger/v2)
 [![GitHub release](https://img.shields.io/github/release/savsgio/go-logger.svg)](https://github.com/savsgio/go-logger/releases)
 
-Fast, lightweight and structured logger for Go.
+Fast, lightweight, customizable and structured logger for Go.
 
 ## Install
 
@@ -34,7 +34,15 @@ go get github.com/savsgio/go-logger/v3
 | Info    | logger.INFO     | info / INFO       |
 | Debug   | logger.DEBUG    | debug / DEBUG     |
 
-**NOTE:** _The default level of standard logger is INFO_
+**NOTE:** _The default level of standard logger is **INFO**._
+
+## Encoders:
+
+- Text
+- JSON
+- Custom (your own encoder).
+
+**NOTE:** _The default encoder of standard logger is **text**._
 
 ## Contributing
 
