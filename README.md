@@ -24,68 +24,17 @@ go get github.com/savsgio/go-logger/v3
 
 ## Levels:
 
-| Level   | Code (constant) | Value (str)         |
-| ------- | --------------- | ------------------- |
-| Fatal   | logger.FATAL    | fatal / FATAL       |
-| Error   | logger.ERROR    | error / ERROR       |
-| Warning | logger.WARNING  | warning / WARNING   |
-| Info    | logger.INFO     | info / INFO         |
-| Debug   | logger.DEBUG    | debug / DEBUG       |
+| Level   | Code (constant) | Value (str)       |
+| ------- | --------------- | ----------------- |
+| Print   | logger.PRINT    |                   |
+| Trace   | logger.TRACE    | trace / TRACE     |
+| Fatal   | logger.FATAL    | fatal / FATAL     |
+| Error   | logger.ERROR    | error / ERROR     |
+| Warning | logger.WARNING  | warning / WARNING |
+| Info    | logger.INFO     | info / INFO       |
+| Debug   | logger.DEBUG    | debug / DEBUG     |
 
-**The default level for std logger is _logger.INFO_**
-
-## Output (_Important_)
-
-By default, output of log is `os.Stderr`, but you can customize it with other `io.Writer`.
-
-### Format
-
-Example of format ouput:
-
-```text
-# Standar instance of logger
-2018/03/16 12:26:48 - DEBUG - Listening on http://0.0.0.0:8000
-
-# Own instance of logger
-2018/03/16 12:26:48 - <name of instance> - DEBUG - Hello gopher
-```
-
-## How to use:
-
-Call logger ever you want with:
-
-```go
-logger.Debugf("Listening on %s", "http://0.0.0.0:8000")
-```
-
-If you want use your own instance of logger:
-
-```go
-myLog := logger.New("myInstance", logger.DEBUG, &bytes.Buffer{})  // Change level
-
-myLog.Warning("Hello gopher")
-```
-
-### Example
-
-```go
-import bytes
-import "github.com/savsgio/go-logger"
-
-
-func myFunc(){
-    logger.SetLevel(logger.DEBUG) // Optional (default: logger.INFO)
-
-    ....
-    logger.Infof("Hi, you are using %s/%s", "savsgio", "go-logger")
-    ....
-
-    customOutput = &bytes.Buffer{}
-    myLog := logger.New("myInstance", logger.INFO, customOutput)  // Change level
-
-    myLog.Warning("Hello gopher")
-}
-```
+**NOTE:** _The default level of standard logger is INFO_
 
 ## Contributing
 
