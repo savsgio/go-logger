@@ -1,7 +1,6 @@
 package logger
 
-const calldepth = 6
-
+// Logger levels.
 const (
 	invalid Level = iota - 1
 	PRINT
@@ -12,6 +11,7 @@ const (
 	DEBUG
 )
 
+// Logger flags.
 const (
 	Ldatetime Flag = 1 << iota
 	Ltimestamp
@@ -20,6 +20,8 @@ const (
 	Lshortfile
 	LstdFlags = Ldatetime
 )
+
+const calldepth = 6
 
 const (
 	printLevelStr   = ""

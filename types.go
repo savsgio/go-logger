@@ -11,15 +11,19 @@ type encodeOutputFunc func(level Level, levelStr, msg string, args []interface{}
 
 type exitFunc func(code int)
 
+// Level type.
 type Level int
 
+// Flag type.
 type Flag int
 
+// Field type.
 type Field struct {
 	Key   string
 	Value interface{}
 }
 
+// EncoderConfig is the encoder configuration.
 type EncoderConfig struct {
 	Fields    []Field
 	Flag      Flag
@@ -32,6 +36,7 @@ type EncoderConfig struct {
 	calldepth int
 }
 
+// Logger type.
 type Logger struct {
 	mu           sync.RWMutex // ensures atomic writes; protects the following fields
 	cfg          EncoderConfig
@@ -42,6 +47,7 @@ type Logger struct {
 	exit         exitFunc
 }
 
+// Encoder is the interface of encoders.
 type Encoder interface {
 	Copy() Encoder
 	Config() EncoderConfig
@@ -49,15 +55,18 @@ type Encoder interface {
 	Encode(buf *bytebufferpool.ByteBuffer, levelStr, msg string, args []interface{}) error
 }
 
+// EncoderBase is the base of encoders.
 type EncoderBase struct {
 	cfg           EncoderConfig
 	fieldsEncoded string
 }
 
+// EncoderText is the text enconder.
 type EncoderText struct {
 	EncoderBase
 }
 
+// EncoderJSON is the json encoder.
 type EncoderJSON struct {
 	EncoderBase
 }

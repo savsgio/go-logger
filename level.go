@@ -2,6 +2,7 @@ package logger
 
 import "strings"
 
+// ParseLevel returns the Level constant from the given level string.
 func ParseLevel(levelStr string) (level Level, err error) {
 	switch strings.ToUpper(levelStr) {
 	case printLevelStr:
