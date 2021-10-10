@@ -723,6 +723,13 @@ func BenchmarkLogger_Levels(b *testing.B) { // nolint:funlen
 			},
 		},
 		{
+			name: "Trace",
+			args: testLoggerLevelArgs{
+				fn:  l.Trace,
+				fnf: l.Tracef,
+			},
+		},
+		{
 			name: "Fatal",
 			args: testLoggerLevelArgs{
 				fn:  l.Fatal,
