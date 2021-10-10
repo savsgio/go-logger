@@ -170,6 +170,14 @@ func (l *Logger) Printf(msg string, args ...interface{}) {
 	l.encodeOutput(PRINT, printLevelStr, msg, args)
 }
 
+func (l *Logger) Trace(msg ...interface{}) {
+	l.encodeOutput(TRACE, traceLevelStr, "", msg)
+}
+
+func (l *Logger) Tracef(msg string, args ...interface{}) {
+	l.encodeOutput(TRACE, traceLevelStr, msg, args)
+}
+
 func (l *Logger) Fatal(msg ...interface{}) {
 	l.encodeOutput(FATAL, fatalLevelStr, "", msg)
 	l.exit(1)

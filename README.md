@@ -6,7 +6,7 @@
 [![GoDev](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/github.com/savsgio/go-logger/v2)
 [![GitHub release](https://img.shields.io/github/release/savsgio/go-logger.svg)](https://github.com/savsgio/go-logger/releases)
 
-Lightweight and fast logger.
+Fast, lightweight and structured logger for Go.
 
 ## Install
 
@@ -22,25 +22,15 @@ go get github.com/savsgio/go-logger/v3
 - 1.14.x
 - 1.13.x
 
-## Benchmarks
-
-```
-Benchmark_Printf-12              3526083               335 ns/op             124 B/op          0 allocs/op
-Benchmark_Errorf-12              3443049               375 ns/op             137 B/op          0 allocs/op
-Benchmark_Warningf-12            3712971               317 ns/op             129 B/op          0 allocs/op
-Benchmark_Infof-12               3668157               316 ns/op             128 B/op          0 allocs/op
-Benchmark_Debugf-12              3719518               317 ns/op             127 B/op          0 allocs/op
-```
-
 ## Levels:
 
-| Literal | Code (constant) | Value (str) |
-| ------- | --------------- | ----------- |
-| Fatal   | logger.FATAL    | fatal       |
-| Error   | logger.ERROR    | error       |
-| Warning | logger.WARNING  | warning     |
-| Info    | logger.INFO     | info        |
-| Debug   | logger.DEBUG    | debug       |
+| Level   | Code (constant) | Value (str)         |
+| ------- | --------------- | ------------------- |
+| Fatal   | logger.FATAL    | fatal / FATAL       |
+| Error   | logger.ERROR    | error / ERROR       |
+| Warning | logger.WARNING  | warning / WARNING   |
+| Info    | logger.INFO     | info / INFO         |
+| Debug   | logger.DEBUG    | debug / DEBUG       |
 
 **The default level for std logger is _logger.INFO_**
 

@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-var levels = []Level{PRINT, FATAL, ERROR, WARNING, INFO, DEBUG}
+var levels = []Level{PRINT, TRACE, FATAL, ERROR, WARNING, INFO, DEBUG}
 
 type testLoggerLevelArgs struct {
 	fn  func(msg ...interface{})
@@ -622,6 +622,18 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			want: testLoggerLevelWant{
 				level:    PRINT,
 				levelStr: printLevelStr,
+				exitCode: -1,
+			},
+		},
+		{
+			name: "Trace",
+			args: testLoggerLevelArgs{
+				fn:  l.Trace,
+				fnf: l.Tracef,
+			},
+			want: testLoggerLevelWant{
+				level:    TRACE,
+				levelStr: traceLevelStr,
 				exitCode: -1,
 			},
 		},

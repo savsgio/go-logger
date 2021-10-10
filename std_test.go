@@ -47,6 +47,18 @@ func TestLogger_std_Levels(t *testing.T) { // nolint:funlen
 			},
 		},
 		{
+			name: "Trace",
+			args: testLoggerLevelArgs{
+				fn:  Trace,
+				fnf: Tracef,
+			},
+			want: testLoggerLevelWant{
+				level:    TRACE,
+				levelStr: traceLevelStr,
+				exitCode: -1,
+			},
+		},
+		{
 			name: "Fatal",
 			args: testLoggerLevelArgs{
 				fn:  Fatal,

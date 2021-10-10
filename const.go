@@ -4,6 +4,7 @@ package logger
 const (
 	invalid Level = iota - 1
 	PRINT
+	TRACE
 	FATAL
 	ERROR
 	WARNING
@@ -25,6 +26,7 @@ const calldepth = 6
 
 const (
 	printLevelStr   = ""
+	traceLevelStr   = "TRACE"
 	fatalLevelStr   = "FATAL"
 	errorLevelStr   = "ERROR"
 	warningLevelStr = "WARNING"

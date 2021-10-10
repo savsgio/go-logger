@@ -60,6 +60,14 @@ func Printf(msg string, args ...interface{}) {
 	std.Printf(msg, args...)
 }
 
+func Trace(msg ...interface{}) {
+	std.Trace(msg...)
+}
+
+func Tracef(msg string, args ...interface{}) {
+	std.Tracef(msg, args...)
+}
+
 func Fatal(msg ...interface{}) {
 	std.Fatal(msg...)
 }
