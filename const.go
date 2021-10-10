@@ -1,29 +1,35 @@
 package logger
 
-const stdName = "std"
-
-const calldepth = 3
-
+// Logger levels.
 const (
-	fatalLevel = iota
-	errorLevel
-	warningLevel
-	infoLevel
-	debugLevel
+	invalid Level = iota - 1
+	PRINT
+	TRACE
+	FATAL
+	ERROR
+	WARNING
+	INFO
+	DEBUG
 )
 
+// Logger flags.
 const (
-	fatalPrefix   = "FATAL"
-	errorPrefix   = "ERROR"
-	warningPrefix = "WARNING"
-	infoPrefix    = "INFO"
-	debugPrefix   = "DEBUG"
+	Ldatetime Flag = 1 << iota
+	Ltimestamp
+	LUTC
+	Llongfile
+	Lshortfile
+	LstdFlags = Ldatetime
 )
 
+const calldepth = 6
+
 const (
-	FATAL   = "fatal"
-	ERROR   = "error"
-	WARNING = "warning"
-	INFO    = "info"
-	DEBUG   = "debug"
+	printLevelStr   = ""
+	traceLevelStr   = "TRACE"
+	fatalLevelStr   = "FATAL"
+	errorLevelStr   = "ERROR"
+	warningLevelStr = "WARNING"
+	infoLevelStr    = "INFO"
+	debugLevelStr   = "DEBUG"
 )

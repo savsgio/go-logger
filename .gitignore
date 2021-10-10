@@ -2,3 +2,5 @@
 .vscode/
 
 vendor/
+
+_examples/

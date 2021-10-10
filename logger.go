@@ -1,195 +1,221 @@
 package logger
 
 import (
-	"fmt"
 	"io"
-	"log"
 	"os"
 
 	"github.com/valyala/bytebufferpool"
 )
 
-// New create new instance of Logger.
-func New(name string, level string, output io.Writer) *Logger {
-	l := &Logger{name: name, out: output}
-	l.instance = log.New(output, "", log.LstdFlags)
+func newEncodeOutputFunc(l *Logger) encodeOutputFunc {
+	return func(level Level, levelStr, msg string, args []interface{}) {
+		l.mu.RLock()
 
-	l.SetLevel(level)
+		if l.isLevelEnabled(level) {
+			buf := bytebufferpool.Get()
+
+			l.encoder.Encode(buf, levelStr, msg, args) // nolint:errcheck
+			l.output.Write(buf.Bytes())                // nolint:errcheck
+
+			bytebufferpool.Put(buf)
+		}
+
+		l.mu.RUnlock()
+	}
+}
+
+// New creates a new Logger.
+func New(level Level, output io.Writer, fields ...Field) *Logger {
+	cfg := EncoderConfig{
+		calldepth: calldepth,
+	}
+
+	enc := NewEncoderText()
+	enc.SetConfig(cfg)
+
+	l := new(Logger)
+	l.cfg = cfg
+	l.level = level
+	l.output = output
+	l.encoder = enc
+	l.encodeOutput = newEncodeOutputFunc(l)
+	l.exit = os.Exit
+
+	l.SetFields(fields...)
+	l.SetFlags(LstdFlags)
 
 	return l
 }
 
-func (l *Logger) isStd() bool {
-	return l.name == stdName
+func (l *Logger) getField(key string) *Field {
+	for i := range l.cfg.Fields {
+		field := &l.cfg.Fields[i]
+
+		if field.Key == key {
+			return field
+		}
+	}
+
+	return nil
 }
 
-// Check level to make print or not.
-func (l *Logger) checkLevel(level int) bool {
+func (l *Logger) setCalldepth(value int) {
+	l.cfg.calldepth = value
+	l.encoder.SetConfig(l.cfg)
+}
+
+func (l *Logger) setFields(fields ...Field) {
+	for _, field := range fields {
+		if optField := l.getField(field.Key); optField != nil {
+			optField.Value = field.Value
+		} else {
+			l.cfg.Fields = append(l.cfg.Fields, field)
+		}
+	}
+
+	l.encoder.SetConfig(l.cfg)
+}
+
+func (l *Logger) isLevelEnabled(level Level) bool {
 	return l.level >= level
 }
 
-// Get complete prefix if name of the logger isn't 'std'.
-func (l *Logger) writePrefix(buff *bytebufferpool.ByteBuffer, prefix string) {
-	buff.SetString("- ")
+func (l *Logger) clone() *Logger {
+	cfgFields := make([]Field, len(l.cfg.Fields))
+	copy(cfgFields, l.cfg.Fields)
 
-	if !l.isStd() {
-		buff.WriteString(l.name) // nolint:errcheck
-		buff.WriteString(" - ")  // nolint:errcheck
-	}
+	l2 := new(Logger)
+	l2.cfg = l.cfg
+	l2.cfg.Fields = cfgFields
+	l2.level = l.level
+	l2.output = l.output
+	l2.encoder = l.encoder.Copy()
+	l2.encodeOutput = l.encodeOutput
+	l2.exit = l.exit
 
-	if prefix != "" {
-		buff.WriteString(prefix) // nolint:errcheck
-		buff.WriteString(" - ")  // nolint:errcheck
-	}
+	return l2
 }
 
-func (l *Logger) output(prefix string, msg ...interface{}) error {
-	buff := bytebufferpool.Get()
-	defer bytebufferpool.Put(buff)
+// WithFields returns a logger copy with the given fields.
+func (l *Logger) WithFields(fields ...Field) *Logger {
+	l.mu.RLock()
 
-	l.writePrefix(buff, prefix)
-	fmt.Fprint(buff, msg...)
+	l2 := l.clone()
+	l2.setFields(fields...)
 
-	return l.instance.Output(calldepth, buff.String()) // nolint:wrapcheck
+	l.mu.RUnlock()
+
+	return l2
 }
 
-func (l *Logger) outputf(prefix string, msg string, v ...interface{}) error {
-	buff := bytebufferpool.Get()
-	defer bytebufferpool.Put(buff)
-
-	l.writePrefix(buff, prefix)
-	fmt.Fprintf(buff, msg, v...)
-
-	return l.instance.Output(calldepth, buff.String()) // nolint:wrapcheck
-}
-
-// SetLevel set level of log.
-func (l *Logger) SetLevel(level string) {
+// SetFields sets the logger fields.
+func (l *Logger) SetFields(fields ...Field) {
 	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	switch level {
-	case FATAL:
-		l.level = fatalLevel
-	case ERROR:
-		l.level = errorLevel
-	case WARNING:
-		l.level = warningLevel
-	case INFO:
-		l.level = infoLevel
-	case DEBUG:
-		l.level = debugLevel
-	default:
-		panic(fmt.Sprintf("Invalid log level, only can use {%s|%s|%s|%s|%s}", FATAL, ERROR, WARNING, INFO, DEBUG))
-	}
-
-	l.fatalEnabled = l.checkLevel(fatalLevel)
-	l.errorEnabled = l.checkLevel(errorLevel)
-	l.warningEnabled = l.checkLevel(warningLevel)
-	l.infoEnabled = l.checkLevel(infoLevel)
-	l.debugEnabled = l.checkLevel(debugLevel)
+	l.setFields(fields...)
+	l.mu.Unlock()
 }
 
-// SetOutput set output of log.
+// SetFlags sets the logger output flags.
+func (l *Logger) SetFlags(flag Flag) {
+	l.mu.Lock()
+
+	l.cfg.Flag = flag
+	l.cfg.Datetime = flag&Ldatetime != 0
+	l.cfg.Timestamp = flag&Ltimestamp != 0
+	l.cfg.UTC = flag&LUTC != 0
+	l.cfg.Shortfile = flag&Lshortfile != 0
+	l.cfg.Longfile = flag&Llongfile != 0
+
+	l.encoder.SetConfig(l.cfg)
+
+	l.mu.Unlock()
+}
+
+// SetLevel sets the logger level.
+func (l *Logger) SetLevel(level Level) {
+	l.mu.Lock()
+	l.level = level
+	l.mu.Unlock()
+}
+
+// SetOutput sets the logger output.
 func (l *Logger) SetOutput(output io.Writer) {
 	l.mu.Lock()
-	l.out = output
+	l.output = output
 	l.mu.Unlock()
-
-	l.instance.SetOutput(output)
 }
 
-// SetLogFlags sets the output flags for the logger.
-func (l *Logger) SetFlags(flag int) {
+// SetEncoder sets the logger encoder.
+func (l *Logger) SetEncoder(enc Encoder) {
 	l.mu.Lock()
-	l.flag = flag
+	l.encoder = enc
+	l.encoder.SetConfig(l.cfg)
 	l.mu.Unlock()
-
-	l.instance.SetFlags(flag)
 }
 
-func (l *Logger) FatalEnabled() bool {
-	return l.fatalEnabled
-}
+// IsLevelEnabled checks if the given level is enabled on the logger.
+func (l *Logger) IsLevelEnabled(level Level) bool {
+	l.mu.RLock()
+	enabled := l.isLevelEnabled(level)
+	l.mu.RUnlock()
 
-func (l *Logger) Fatal(msg ...interface{}) {
-	l.output(fatalPrefix, msg...) // nolint:errcheck
-	os.Exit(1)
-}
-
-func (l *Logger) Fatalf(msg string, v ...interface{}) {
-	l.outputf(fatalPrefix, msg, v...) // nolint:errcheck
-	os.Exit(1)
-}
-
-func (l *Logger) ErrorEnabled() bool {
-	return l.errorEnabled
-}
-
-func (l *Logger) Error(msg ...interface{}) {
-	if l.ErrorEnabled() {
-		l.output(errorPrefix, msg...) // nolint:errcheck
-	}
-}
-
-func (l *Logger) Errorf(msg string, v ...interface{}) {
-	if l.ErrorEnabled() {
-		l.outputf(errorPrefix, msg, v...) // nolint:errcheck
-	}
-}
-
-func (l *Logger) WarningEnabled() bool {
-	return l.warningEnabled
-}
-
-func (l *Logger) Warning(msg ...interface{}) {
-	if l.WarningEnabled() {
-		l.output(warningPrefix, msg...) // nolint:errcheck
-	}
-}
-
-func (l *Logger) Warningf(msg string, v ...interface{}) {
-	if l.WarningEnabled() {
-		l.outputf(warningPrefix, msg, v...) // nolint:errcheck
-	}
-}
-
-func (l *Logger) InfoEnabled() bool {
-	return l.infoEnabled
-}
-
-func (l *Logger) Info(msg ...interface{}) {
-	if l.InfoEnabled() {
-		l.output(infoPrefix, msg...) // nolint:errcheck
-	}
-}
-
-func (l *Logger) Infof(msg string, v ...interface{}) {
-	if l.InfoEnabled() {
-		l.outputf(infoPrefix, msg, v...) // nolint:errcheck
-	}
-}
-
-func (l *Logger) DebugEnabled() bool {
-	return l.debugEnabled
-}
-
-func (l *Logger) Debug(msg ...interface{}) {
-	if l.DebugEnabled() {
-		l.output(debugPrefix, msg...) // nolint:errcheck
-	}
-}
-
-func (l *Logger) Debugf(msg string, v ...interface{}) {
-	if l.DebugEnabled() {
-		l.outputf(debugPrefix, msg, v...) // nolint:errcheck
-	}
+	return enabled
 }
 
 func (l *Logger) Print(msg ...interface{}) {
-	l.output("", msg...) // nolint:errcheck
+	l.encodeOutput(PRINT, printLevelStr, "", msg)
 }
 
-func (l *Logger) Printf(msg string, v ...interface{}) {
-	l.outputf("", msg, v...) // nolint:errcheck
+func (l *Logger) Printf(msg string, args ...interface{}) {
+	l.encodeOutput(PRINT, printLevelStr, msg, args)
+}
+
+func (l *Logger) Trace(msg ...interface{}) {
+	l.encodeOutput(TRACE, traceLevelStr, "", msg)
+}
+
+func (l *Logger) Tracef(msg string, args ...interface{}) {
+	l.encodeOutput(TRACE, traceLevelStr, msg, args)
+}
+
+func (l *Logger) Fatal(msg ...interface{}) {
+	l.encodeOutput(FATAL, fatalLevelStr, "", msg)
+	l.exit(1)
+}
+
+func (l *Logger) Fatalf(msg string, args ...interface{}) {
+	l.encodeOutput(FATAL, fatalLevelStr, msg, args)
+	l.exit(1)
+}
+
+func (l *Logger) Error(msg ...interface{}) {
+	l.encodeOutput(ERROR, errorLevelStr, "", msg)
+}
+
+func (l *Logger) Errorf(msg string, args ...interface{}) {
+	l.encodeOutput(ERROR, errorLevelStr, msg, args)
+}
+
+func (l *Logger) Warning(msg ...interface{}) {
+	l.encodeOutput(WARNING, warningLevelStr, "", msg)
+}
+
+func (l *Logger) Warningf(msg string, args ...interface{}) {
+	l.encodeOutput(WARNING, warningLevelStr, msg, args)
+}
+
+func (l *Logger) Info(msg ...interface{}) {
+	l.encodeOutput(INFO, infoLevelStr, "", msg)
+}
+
+func (l *Logger) Infof(msg string, args ...interface{}) {
+	l.encodeOutput(INFO, infoLevelStr, msg, args)
+}
+
+func (l *Logger) Debug(msg ...interface{}) {
+	l.encodeOutput(DEBUG, debugLevelStr, "", msg)
+}
+
+func (l *Logger) Debugf(msg string, args ...interface{}) {
+	l.encodeOutput(DEBUG, debugLevelStr, msg, args)
 }
