@@ -8,10 +8,12 @@ import (
 
 const sepText = " - "
 
+// NewEncoderText creates a new text encoder.
 func NewEncoderText() *EncoderText {
 	return new(EncoderText)
 }
 
+// Copy returns a copy of the text encoder.
 func (enc *EncoderText) Copy() Encoder {
 	copyEnc := NewEncoderText()
 	copyEnc.EncoderBase = *enc.EncoderBase.Copy()
@@ -19,6 +21,7 @@ func (enc *EncoderText) Copy() Encoder {
 	return copyEnc
 }
 
+// SetConfig sets the encoder config and encode the fields.
 func (enc *EncoderText) SetConfig(cfg EncoderConfig) {
 	enc.EncoderBase.SetConfig(cfg)
 
@@ -49,6 +52,7 @@ func (enc *EncoderText) SetConfig(cfg EncoderConfig) {
 	bytebufferpool.Put(buf)
 }
 
+// Encode encodes the given level string, message and arguments to the buffer.
 func (enc *EncoderText) Encode(buf *bytebufferpool.ByteBuffer, levelStr, msg string, args []interface{}) error {
 	now := time.Now()
 	if enc.cfg.UTC {

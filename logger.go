@@ -24,12 +24,8 @@ func newEncodeOutputFunc(l *Logger) encodeOutputFunc {
 	}
 }
 
-// New create new instance of Logger.
-func New(level Level, output io.Writer, fields ...Field) (*Logger, error) {
-	if level < PRINT || level > DEBUG {
-		return nil, ErrInvalidLevel
-	}
-
+// New creates a new Logger.
+func New(level Level, output io.Writer, fields ...Field) *Logger {
 	cfg := EncoderConfig{
 		calldepth: calldepth,
 	}
@@ -48,7 +44,7 @@ func New(level Level, output io.Writer, fields ...Field) (*Logger, error) {
 	l.SetFields(fields...)
 	l.SetFlags(LstdFlags)
 
-	return l, nil
+	return l
 }
 
 func (l *Logger) getField(key string) *Field {
@@ -100,6 +96,7 @@ func (l *Logger) clone() *Logger {
 	return l2
 }
 
+// WithFields returns a logger copy with the given fields.
 func (l *Logger) WithFields(fields ...Field) *Logger {
 	l.mu.RLock()
 
@@ -111,13 +108,14 @@ func (l *Logger) WithFields(fields ...Field) *Logger {
 	return l2
 }
 
+// SetFields sets the logger fields.
 func (l *Logger) SetFields(fields ...Field) {
 	l.mu.Lock()
 	l.setFields(fields...)
 	l.mu.Unlock()
 }
 
-// SetLogFlags sets the output flags for the logger.
+// SetFlags sets the logger output flags.
 func (l *Logger) SetFlags(flag Flag) {
 	l.mu.Lock()
 
@@ -133,21 +131,21 @@ func (l *Logger) SetFlags(flag Flag) {
 	l.mu.Unlock()
 }
 
-// SetLevel set level of log.
+// SetLevel sets the logger level.
 func (l *Logger) SetLevel(level Level) {
 	l.mu.Lock()
 	l.level = level
 	l.mu.Unlock()
 }
 
-// SetOutput set output of log.
+// SetOutput sets the logger output.
 func (l *Logger) SetOutput(output io.Writer) {
 	l.mu.Lock()
 	l.output = output
 	l.mu.Unlock()
 }
 
-// SetOutput set output of log.
+// SetEncoder sets the logger encoder.
 func (l *Logger) SetEncoder(enc Encoder) {
 	l.mu.Lock()
 	l.encoder = enc
@@ -155,6 +153,7 @@ func (l *Logger) SetEncoder(enc Encoder) {
 	l.mu.Unlock()
 }
 
+// IsLevelEnabled checks if the given level is enabled on the logger.
 func (l *Logger) IsLevelEnabled(level Level) bool {
 	l.mu.RLock()
 	enabled := l.isLevelEnabled(level)

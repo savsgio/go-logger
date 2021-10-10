@@ -8,12 +8,13 @@ import (
 var std = newStd()
 
 func newStd() *Logger {
-	l, _ := New(INFO, os.Stderr)
+	l := New(INFO, os.Stderr)
 	l.setCalldepth(calldepth + 1)
 
 	return l
 }
 
+// WithFields returns a copy of the standard logger with the given fields.
 func WithFields(fields ...Field) *Logger {
 	l := std.WithFields(fields...)
 	l.setCalldepth(calldepth)
@@ -21,26 +22,32 @@ func WithFields(fields ...Field) *Logger {
 	return l
 }
 
+// SetFields sets the fields to the standard logger.
 func SetFields(fields ...Field) {
 	std.SetFields(fields...)
 }
 
+// SetFlags sets the output flags to the standard logger.
 func SetFlags(flag Flag) {
 	std.SetFlags(flag)
 }
 
+// SetLevel sets the level to the standard logger.
 func SetLevel(level Level) {
 	std.SetLevel(level)
 }
 
+// SetOutput sets the output to the standard logger.
 func SetOutput(output io.Writer) {
 	std.SetOutput(output)
 }
 
+// SetEncoder sets the encoder to the standard logger.
 func SetEncoder(enc Encoder) {
 	std.SetEncoder(enc)
 }
 
+// IsLevelEnabled checks if the given level is enabled on the standard logger.
 func IsLevelEnabled(level Level) bool {
 	return std.IsLevelEnabled(level)
 }

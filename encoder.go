@@ -13,30 +13,6 @@ func newEncoderBase() *EncoderBase {
 	return new(EncoderBase)
 }
 
-func (enc *EncoderBase) Copy() *EncoderBase {
-	copyEnc := newEncoderBase()
-	copyEnc.cfg = enc.cfg
-	copyEnc.fieldsEncoded = enc.fieldsEncoded
-
-	return copyEnc
-}
-
-func (enc *EncoderBase) Config() EncoderConfig {
-	return enc.cfg
-}
-
-func (enc *EncoderBase) SetConfig(cfg EncoderConfig) {
-	enc.cfg = cfg
-}
-
-func (enc *EncoderBase) FieldsEnconded() string {
-	return enc.fieldsEncoded
-}
-
-func (enc *EncoderBase) SetFieldsEnconded(fieldsEncoded string) {
-	enc.fieldsEncoded = fieldsEncoded
-}
-
 func (enc *EncoderBase) getFileCaller() (string, int) {
 	pc := make([]uintptr, 1)
 
@@ -61,14 +37,46 @@ func (enc *EncoderBase) getFileCaller() (string, int) {
 	return file, frame.Line
 }
 
+// Copy returns a copy of the encoder base.
+func (enc *EncoderBase) Copy() *EncoderBase {
+	copyEnc := newEncoderBase()
+	copyEnc.cfg = enc.cfg
+	copyEnc.fieldsEncoded = enc.fieldsEncoded
+
+	return copyEnc
+}
+
+// Config returns the encoder config.
+func (enc *EncoderBase) Config() EncoderConfig {
+	return enc.cfg
+}
+
+// SetConfig sets the encoder config.
+func (enc *EncoderBase) SetConfig(cfg EncoderConfig) {
+	enc.cfg = cfg
+}
+
+// FieldsEnconded returns the encoded fields.
+func (enc *EncoderBase) FieldsEnconded() string {
+	return enc.fieldsEncoded
+}
+
+// SetFieldsEnconded sets the fields enconded.
+func (enc *EncoderBase) SetFieldsEnconded(fieldsEncoded string) {
+	enc.fieldsEncoded = fieldsEncoded
+}
+
+// WriteDatetime writes the given time to the buffer in RFC3339 format.
 func (enc *EncoderBase) WriteDatetime(buf *bytebufferpool.ByteBuffer, now time.Time) {
 	buf.B = now.AppendFormat(buf.B, time.RFC3339)
 }
 
+// WriteTimestamp writes the timestamp to the buffer from the given time.
 func (enc *EncoderBase) WriteTimestamp(buf *bytebufferpool.ByteBuffer, now time.Time) {
 	buf.B = strconv.AppendInt(buf.B, now.Unix(), 10)
 }
 
+// WriteFileCaller writes the file caller to the buffer.
 func (enc *EncoderBase) WriteFileCaller(buf *bytebufferpool.ByteBuffer) {
 	file, line := enc.getFileCaller()
 
@@ -77,12 +85,14 @@ func (enc *EncoderBase) WriteFileCaller(buf *bytebufferpool.ByteBuffer) {
 	buf.B = strconv.AppendInt(buf.B, int64(line), 10)
 }
 
+// WriteFieldsEnconded writes the encoded fields to the buffer.
 func (enc *EncoderBase) WriteFieldsEnconded(buf *bytebufferpool.ByteBuffer) { // nolint:interfacer
 	if enc.fieldsEncoded != "" {
 		buf.WriteString(enc.fieldsEncoded) // nolint:errcheck
 	}
 }
 
+// WriteInterface writes an interface value to the buffer.
 func (enc *EncoderBase) WriteInterface(buf *bytebufferpool.ByteBuffer, value interface{}) {
 	if str, ok := value.(string); ok {
 		buf.WriteString(str) // nolint:errcheck
@@ -91,6 +101,7 @@ func (enc *EncoderBase) WriteInterface(buf *bytebufferpool.ByteBuffer, value int
 	}
 }
 
+// WriteMessage writes the given message and arguments to the buffer.
 func (enc *EncoderBase) WriteMessage(buf *bytebufferpool.ByteBuffer, msg string, args []interface{}) {
 	lenArgs := len(args)
 
@@ -112,6 +123,7 @@ func (enc *EncoderBase) WriteMessage(buf *bytebufferpool.ByteBuffer, msg string,
 	}
 }
 
+// WriteNewLine writes a new line to the buffer if it's needed.
 func (enc *EncoderBase) WriteNewLine(buf *bytebufferpool.ByteBuffer) {
 	if length := buf.Len(); length > 0 && buf.B[length-1] != '\n' {
 		buf.WriteByte('\n') // nolint:errcheck

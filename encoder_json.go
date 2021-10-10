@@ -6,10 +6,12 @@ import (
 	"github.com/valyala/bytebufferpool"
 )
 
+// NewEncoderJSON creates a new json encoder.
 func NewEncoderJSON() *EncoderJSON {
 	return new(EncoderJSON)
 }
 
+// Copy returns a copy of the json encoder.
 func (enc *EncoderJSON) Copy() Encoder {
 	copyEnc := NewEncoderJSON()
 	copyEnc.EncoderBase = *enc.EncoderBase.Copy()
@@ -17,6 +19,7 @@ func (enc *EncoderJSON) Copy() Encoder {
 	return copyEnc
 }
 
+// SetConfig sets the encoder config and encode the fields.
 func (enc *EncoderJSON) SetConfig(cfg EncoderConfig) {
 	enc.EncoderBase.SetConfig(cfg)
 
@@ -35,6 +38,7 @@ func (enc *EncoderJSON) SetConfig(cfg EncoderConfig) {
 	bytebufferpool.Put(buf)
 }
 
+// Encode encodes the given level string, message and arguments to the buffer.
 func (enc *EncoderJSON) Encode(buf *bytebufferpool.ByteBuffer, levelStr, msg string, args []interface{}) error {
 	now := time.Now()
 	if enc.cfg.UTC {
