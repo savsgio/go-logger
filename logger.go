@@ -90,7 +90,7 @@ func (l *Logger) clone() *Logger {
 	l2.level = l.level
 	l2.output = l.output
 	l2.encoder = l.encoder.Copy()
-	l2.encodeOutput = l.encodeOutput
+	l2.encodeOutput = newEncodeOutputFunc(l2)
 	l2.exit = l.exit
 
 	return l2
