@@ -98,10 +98,6 @@ func benchmarkEncoderEncode(b *testing.B, enc Encoder) {
 	}
 }
 
-func newTestEncoderConfig() EncoderConfig {
-	return EncoderConfig{}
-}
-
 func newTestEncoderBase() *EncoderBase {
 	enc := new(EncoderBase)
 	enc.SetConfig(newTestEncoderConfig())
@@ -115,24 +111,28 @@ func Test_newEncoderBase(t *testing.T) {
 	}
 }
 
+func testEncoderBaseCopy(t *testing.T, enc1, enc2 *EncoderBase) {
+	t.Helper()
+
+	enc1Ptr := reflect.ValueOf(enc1).Pointer()
+	enc2Ptr := reflect.ValueOf(enc2).Pointer()
+
+	if enc1Ptr == enc2Ptr {
+		t.Error("the copy has the same pointer than original")
+	}
+
+	testEncoderConfigCopy(t, enc1.cfg, enc2.cfg)
+
+	if enc1.fieldsEncoded != enc2.fieldsEncoded {
+		t.Errorf("fieldsEncoded == %v, want %v", enc1.fieldsEncoded, enc2.fieldsEncoded)
+	}
+}
+
 func TestEncoderBase_Copy(t *testing.T) {
 	enc := newTestEncoderBase()
 	copyEnc := enc.Copy()
 
-	encPtr := reflect.ValueOf(enc).Pointer()
-	copyEncPtr := reflect.ValueOf(copyEnc).Pointer()
-
-	if copyEncPtr == encPtr {
-		t.Error("the copy has the same pointer than original")
-	}
-
-	if !reflect.DeepEqual(copyEnc.cfg, enc.cfg) {
-		t.Errorf("cfg == %v, want %v", copyEnc.cfg, enc.cfg)
-	}
-
-	if copyEnc.fieldsEncoded != enc.fieldsEncoded {
-		t.Errorf("fieldsEncoded == %s, want %s", copyEnc.fieldsEncoded, enc.fieldsEncoded)
-	}
+	testEncoderBaseCopy(t, enc, copyEnc)
 }
 
 func TestEncoderBase_Config(t *testing.T) {

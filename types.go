@@ -7,7 +7,7 @@ import (
 	"github.com/valyala/bytebufferpool"
 )
 
-type encodeOutputFunc func(level Level, levelStr, msg string, args []interface{})
+type encodeOutputFunc func(level Level, msg string, args []interface{})
 
 type exitFunc func(code int)
 

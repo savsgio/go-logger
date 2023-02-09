@@ -120,3 +120,104 @@ func Test_ParseLevel(t *testing.T) { // nolint:funlen
 		})
 	}
 }
+
+func TestLevel_String(t *testing.T) { // nolint:funlen
+	type args struct {
+		level Level
+	}
+
+	type want struct {
+		result string
+	}
+
+	tests := []struct {
+		name string
+		args args
+		want want
+	}{
+		{
+			name: "Print",
+			args: args{
+				level: PRINT,
+			},
+			want: want{
+				result: printLevelStr,
+			},
+		},
+		{
+			name: "Trace",
+			args: args{
+				level: TRACE,
+			},
+			want: want{
+				result: traceLevelStr,
+			},
+		},
+		{
+			name: "Fatal",
+			args: args{
+				level: FATAL,
+			},
+			want: want{
+				result: fatalLevelStr,
+			},
+		},
+		{
+			name: "Error",
+			args: args{
+				level: ERROR,
+			},
+			want: want{
+				result: errorLevelStr,
+			},
+		},
+		{
+			name: "Warning",
+			args: args{
+				level: WARNING,
+			},
+			want: want{
+				result: warningLevelStr,
+			},
+		},
+		{
+			name: "Info",
+			args: args{
+				level: INFO,
+			},
+			want: want{
+				result: infoLevelStr,
+			},
+		},
+		{
+			name: "Debug",
+			args: args{
+				level: DEBUG,
+			},
+			want: want{
+				result: debugLevelStr,
+			},
+		},
+		{
+			name: "Invalid",
+			args: args{
+				level: invalid,
+			},
+			want: want{
+				result: ErrInvalidLevel.Error(),
+			},
+		},
+	}
+
+	for i := range tests {
+		test := tests[i]
+
+		t.Run(test.name, func(t *testing.T) {
+			t.Helper()
+
+			if result := test.args.level.String(); result != test.want.result {
+				t.Errorf("level == %s, want %s", result, test.want.result)
+			}
+		})
+	}
+}

@@ -1,6 +1,8 @@
 package logger
 
-import "strings"
+import (
+	"strings"
+)
 
 // ParseLevel returns the Level constant from the given level string.
 func ParseLevel(levelStr string) (level Level, err error) {
@@ -25,4 +27,27 @@ func ParseLevel(levelStr string) (level Level, err error) {
 	}
 
 	return level, err
+}
+
+func (l Level) String() string {
+	switch l {
+	case PRINT:
+		return printLevelStr
+	case TRACE:
+		return traceLevelStr
+	case FATAL:
+		return fatalLevelStr
+	case ERROR:
+		return errorLevelStr
+	case WARNING:
+		return warningLevelStr
+	case INFO:
+		return infoLevelStr
+	case DEBUG:
+		return debugLevelStr
+	case invalid:
+		fallthrough
+	default:
+		return ErrInvalidLevel.Error()
+	}
 }

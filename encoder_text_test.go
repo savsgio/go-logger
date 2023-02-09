@@ -7,7 +7,10 @@ import (
 )
 
 func newTestEncoderText() *EncoderText {
-	return NewEncoderText()
+	enc := NewEncoderText()
+	enc.SetConfig(newTestEncoderConfig())
+
+	return enc
 }
 
 func Test_NewEncoderText(t *testing.T) {
@@ -31,9 +34,7 @@ func TestEncoderText_Copy(t *testing.T) {
 		t.Error("the copy has the same pointer than original")
 	}
 
-	if !reflect.DeepEqual(copyEnc.EncoderBase, enc.EncoderBase) {
-		t.Errorf("EncoderBase == %v, want %v", copyEnc.EncoderBase, enc.EncoderBase)
-	}
+	testEncoderBaseCopy(t, &enc.EncoderBase, &copyEnc.EncoderBase)
 }
 
 func TestEncoderText_SetConfig(t *testing.T) {

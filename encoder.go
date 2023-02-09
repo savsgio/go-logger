@@ -40,7 +40,7 @@ func (enc *EncoderBase) getFileCaller() (string, int) {
 // Copy returns a copy of the encoder base.
 func (enc *EncoderBase) Copy() *EncoderBase {
 	copyEnc := newEncoderBase()
-	copyEnc.cfg = enc.cfg
+	copyEnc.cfg = enc.cfg.Copy()
 	copyEnc.fieldsEncoded = enc.fieldsEncoded
 
 	return copyEnc

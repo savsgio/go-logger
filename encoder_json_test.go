@@ -9,7 +9,10 @@ import (
 )
 
 func newTestEncoderJSON() *EncoderJSON {
-	return NewEncoderJSON()
+	enc := NewEncoderJSON()
+	enc.SetConfig(newTestEncoderConfig())
+
+	return enc
 }
 
 func Test_NewEncoderJSON(t *testing.T) {
@@ -318,9 +321,7 @@ func TestEncoderJSON_Copy(t *testing.T) {
 		t.Error("the copy has the same pointer than original")
 	}
 
-	if !reflect.DeepEqual(copyEnc.EncoderBase, enc.EncoderBase) {
-		t.Errorf("EncoderBase == %v, want %v", copyEnc.EncoderBase, enc.EncoderBase)
-	}
+	testEncoderBaseCopy(t, &enc.EncoderBase, &copyEnc.EncoderBase)
 }
 
 func TestEncoderJSON_SetConfig(t *testing.T) { // nolint:funlen

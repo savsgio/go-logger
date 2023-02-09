@@ -29,7 +29,13 @@ type testLoggerLevelCase struct {
 }
 
 func newTestLogger() *Logger {
-	return New(DEBUG, ioutil.Discard)
+	cfg := newTestEncoderConfig()
+
+	l := New(DEBUG, ioutil.Discard)
+	l.SetFields(cfg.Fields...)
+	l.SetFlags(cfg.Flag)
+
+	return l
 }
 
 func Test_New(t *testing.T) {
@@ -89,7 +95,7 @@ func TestLogger_encodeOutput(t *testing.T) {
 	l.SetOutput(output)
 	l.SetLevel(INFO)
 
-	l.encodeOutput(ERROR, infoLevelStr, "hello %s", []interface{}{"word"})
+	l.encodeOutput(ERROR, "hello %s", []interface{}{"word"})
 
 	if output.Len() == 0 {
 		t.Error("enconded output has not been written")
@@ -97,7 +103,7 @@ func TestLogger_encodeOutput(t *testing.T) {
 
 	output.Reset()
 
-	l.encodeOutput(DEBUG, debugLevelStr, "hello %s", []interface{}{"word"})
+	l.encodeOutput(DEBUG, "hello %s", []interface{}{"word"})
 
 	if output.Len() > 0 {
 		t.Error("enconded output has been written")
@@ -149,6 +155,7 @@ func TestLogger_setFields(t *testing.T) { // nolint:funlen
 	}
 
 	l := newTestLogger()
+	l.cfg.Fields = nil
 
 	tests := []struct {
 		name string
@@ -528,11 +535,10 @@ func testLoggerLevels(t *testing.T, l *Logger, testCases []testLoggerLevelCase) 
 	type loggerWrapper struct {
 		*Logger
 
-		encodeLevel    Level
-		encodeLevelStr string
-		encodeMsg      string
-		encodeArgs     []interface{}
-		fatalExitCode  int
+		encodeLevel   Level
+		encodeMsg     string
+		encodeArgs    []interface{}
+		fatalExitCode int
 	}
 
 	lw := &loggerWrapper{
@@ -540,9 +546,8 @@ func testLoggerLevels(t *testing.T, l *Logger, testCases []testLoggerLevelCase) 
 		encodeLevel:   invalid,
 		fatalExitCode: -1,
 	}
-	lw.Logger.encodeOutput = func(level Level, levelStr, msg string, args []interface{}) {
+	lw.Logger.encodeOutput = func(level Level, msg string, args []interface{}) {
 		lw.encodeLevel = level
-		lw.encodeLevelStr = levelStr
 		lw.encodeMsg = msg
 		lw.encodeArgs = args
 	}
@@ -552,7 +557,6 @@ func testLoggerLevels(t *testing.T, l *Logger, testCases []testLoggerLevelCase) 
 
 	resetLoggerWrapper := func(lw *loggerWrapper) {
 		lw.encodeLevel = invalid
-		lw.encodeLevelStr = ""
 		lw.encodeMsg = ""
 		lw.encodeArgs = nil
 		lw.fatalExitCode = -1
@@ -561,10 +565,6 @@ func testLoggerLevels(t *testing.T, l *Logger, testCases []testLoggerLevelCase) 
 	assert := func(msg string, args []interface{}, want testLoggerLevelWant) {
 		if lw.encodeLevel != want.level {
 			t.Errorf("level == %d, want %d", lw.encodeLevel, want.level)
-		}
-
-		if lw.encodeLevelStr != want.levelStr {
-			t.Errorf("level string == %s, want %s", lw.encodeLevelStr, want.levelStr)
 		}
 
 		if lw.encodeMsg != msg {

@@ -26,6 +26,8 @@ func (enc *EncoderText) SetConfig(cfg EncoderConfig) {
 	enc.EncoderBase.SetConfig(cfg)
 
 	if len(cfg.Fields) == 0 {
+		enc.fieldsEncoded = ""
+
 		return
 	}
 

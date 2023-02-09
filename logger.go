@@ -8,14 +8,14 @@ import (
 )
 
 func newEncodeOutputFunc(l *Logger) encodeOutputFunc {
-	return func(level Level, levelStr, msg string, args []interface{}) {
+	return func(level Level, msg string, args []interface{}) {
 		l.mu.RLock()
 
 		if l.isLevelEnabled(level) {
 			buf := bytebufferpool.Get()
 
-			l.encoder.Encode(buf, levelStr, msg, args) // nolint:errcheck
-			l.output.Write(buf.Bytes())                // nolint:errcheck
+			l.encoder.Encode(buf, level.String(), msg, args) // nolint:errcheck
+			l.output.Write(buf.Bytes())                      // nolint:errcheck
 
 			bytebufferpool.Put(buf)
 		}
@@ -81,12 +81,8 @@ func (l *Logger) isLevelEnabled(level Level) bool {
 }
 
 func (l *Logger) clone() *Logger {
-	cfgFields := make([]Field, len(l.cfg.Fields))
-	copy(cfgFields, l.cfg.Fields)
-
 	l2 := new(Logger)
-	l2.cfg = l.cfg
-	l2.cfg.Fields = cfgFields
+	l2.cfg = l.cfg.Copy()
 	l2.level = l.level
 	l2.output = l.output
 	l2.encoder = l.encoder.Copy()
@@ -163,59 +159,59 @@ func (l *Logger) IsLevelEnabled(level Level) bool {
 }
 
 func (l *Logger) Print(msg ...interface{}) {
-	l.encodeOutput(PRINT, printLevelStr, "", msg)
+	l.encodeOutput(PRINT, "", msg)
 }
 
 func (l *Logger) Printf(msg string, args ...interface{}) {
-	l.encodeOutput(PRINT, printLevelStr, msg, args)
+	l.encodeOutput(PRINT, msg, args)
 }
 
 func (l *Logger) Trace(msg ...interface{}) {
-	l.encodeOutput(TRACE, traceLevelStr, "", msg)
+	l.encodeOutput(TRACE, "", msg)
 }
 
 func (l *Logger) Tracef(msg string, args ...interface{}) {
-	l.encodeOutput(TRACE, traceLevelStr, msg, args)
+	l.encodeOutput(TRACE, msg, args)
 }
 
 func (l *Logger) Fatal(msg ...interface{}) {
-	l.encodeOutput(FATAL, fatalLevelStr, "", msg)
+	l.encodeOutput(FATAL, "", msg)
 	l.exit(1)
 }
 
 func (l *Logger) Fatalf(msg string, args ...interface{}) {
-	l.encodeOutput(FATAL, fatalLevelStr, msg, args)
+	l.encodeOutput(FATAL, msg, args)
 	l.exit(1)
 }
 
 func (l *Logger) Error(msg ...interface{}) {
-	l.encodeOutput(ERROR, errorLevelStr, "", msg)
+	l.encodeOutput(ERROR, "", msg)
 }
 
 func (l *Logger) Errorf(msg string, args ...interface{}) {
-	l.encodeOutput(ERROR, errorLevelStr, msg, args)
+	l.encodeOutput(ERROR, msg, args)
 }
 
 func (l *Logger) Warning(msg ...interface{}) {
-	l.encodeOutput(WARNING, warningLevelStr, "", msg)
+	l.encodeOutput(WARNING, "", msg)
 }
 
 func (l *Logger) Warningf(msg string, args ...interface{}) {
-	l.encodeOutput(WARNING, warningLevelStr, msg, args)
+	l.encodeOutput(WARNING, msg, args)
 }
 
 func (l *Logger) Info(msg ...interface{}) {
-	l.encodeOutput(INFO, infoLevelStr, "", msg)
+	l.encodeOutput(INFO, "", msg)
 }
 
 func (l *Logger) Infof(msg string, args ...interface{}) {
-	l.encodeOutput(INFO, infoLevelStr, msg, args)
+	l.encodeOutput(INFO, msg, args)
 }
 
 func (l *Logger) Debug(msg ...interface{}) {
-	l.encodeOutput(DEBUG, debugLevelStr, "", msg)
+	l.encodeOutput(DEBUG, "", msg)
 }
 
 func (l *Logger) Debugf(msg string, args ...interface{}) {
-	l.encodeOutput(DEBUG, debugLevelStr, msg, args)
+	l.encodeOutput(DEBUG, msg, args)
 }
