@@ -178,3 +178,8 @@ func TestEncoderText_Encode(t *testing.T) { // nolint:funlen,dupl
 
 	testEncoderEncode(t, enc, testCases)
 }
+
+func BenchmarkEncoderText_Encode(b *testing.B) {
+	enc := newTestEncoderText()
+	benchmarkEncoderEncode(b, enc)
+}

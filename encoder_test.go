@@ -71,6 +71,33 @@ func testEncoderEncode(t *testing.T, enc Encoder, testCases []testEncodeCase) {
 	}
 }
 
+func benchmarkEncoderEncode(b *testing.B, enc Encoder) {
+	b.Helper()
+
+	cfg := EncoderConfig{
+		Fields:    []Field{{"url", `GET "https://example.com"`}},
+		UTC:       true,
+		Datetime:  true,
+		Timestamp: true,
+		Shortfile: false,
+		Longfile:  false,
+	}
+	enc.SetConfig(cfg)
+
+	buf := bytebufferpool.Get()
+	msg := `failed to request: jojoj""""`
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		if err := enc.Encode(buf, debugLevelStr, msg, nil); err != nil {
+			b.Fatal(err)
+		}
+
+		buf.Reset()
+	}
+}
+
 func newTestEncoderConfig() EncoderConfig {
 	return EncoderConfig{}
 }

@@ -94,8 +94,8 @@ func (enc *EncoderBase) WriteFieldsEnconded(buf *bytebufferpool.ByteBuffer) { //
 
 // WriteInterface writes an interface value to the buffer.
 func (enc *EncoderBase) WriteInterface(buf *bytebufferpool.ByteBuffer, value interface{}) {
-	if str, ok := value.(string); ok {
-		buf.WriteString(str) // nolint:errcheck
+	if strValue, ok := value.(string); ok {
+		buf.WriteString(strValue) // nolint:errcheck
 	} else {
 		fmt.Fprint(buf, value)
 	}
@@ -111,8 +111,8 @@ func (enc *EncoderBase) WriteMessage(buf *bytebufferpool.ByteBuffer, msg string,
 	case msg != "":
 		fmt.Fprintf(buf, msg, args...)
 	case lenArgs == 1:
-		if str, ok := args[0].(string); ok {
-			buf.WriteString(str) // nolint:errcheck
+		if strValue, ok := args[0].(string); ok {
+			buf.WriteString(strValue) // nolint:errcheck
 
 			return
 		}
