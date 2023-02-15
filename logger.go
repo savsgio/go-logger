@@ -3,8 +3,7 @@ package logger
 import (
 	"io"
 	"os"
-
-	"github.com/valyala/bytebufferpool"
+	"time"
 )
 
 func newEncodeOutputFunc(l *Logger) encodeOutputFunc {
@@ -12,12 +11,30 @@ func newEncodeOutputFunc(l *Logger) encodeOutputFunc {
 		l.mu.RLock()
 
 		if l.isLevelEnabled(level) {
-			buf := bytebufferpool.Get()
+			buf := AcquireBuffer()
 
-			l.encoder.Encode(buf, level.String(), msg, args) // nolint:errcheck
-			l.output.Write(buf.Bytes())                      // nolint:errcheck
+			e := Entry{
+				Level:   level,
+				Message: buf.formatMessage(msg, args),
+				Config:  l.cfg,
+			}
 
-			bytebufferpool.Put(buf)
+			if l.cfg.Datetime || l.cfg.Timestamp {
+				e.Time = time.Now()
+
+				if l.cfg.UTC {
+					e.Time = e.Time.UTC()
+				}
+			}
+
+			if l.cfg.Shortfile || l.cfg.Longfile {
+				e.Caller = getFileCaller(l.cfg.calldepth)
+			}
+
+			l.encoder.Encode(buf, e)    // nolint:errcheck
+			l.output.Write(buf.Bytes()) // nolint:errcheck
+
+			ReleaseBuffer(buf)
 		}
 
 		l.mu.RUnlock()
@@ -26,18 +43,13 @@ func newEncodeOutputFunc(l *Logger) encodeOutputFunc {
 
 // New creates a new Logger.
 func New(level Level, output io.Writer, fields ...Field) *Logger {
-	cfg := EncoderConfig{
+	l := new(Logger)
+	l.cfg = Config{
 		calldepth: calldepth,
 	}
-
-	enc := NewEncoderText()
-	enc.SetConfig(cfg)
-
-	l := new(Logger)
-	l.cfg = cfg
 	l.level = level
 	l.output = output
-	l.encoder = enc
+	l.encoder = NewEncoderText()
 	l.encodeOutput = newEncodeOutputFunc(l)
 	l.exit = os.Exit
 
@@ -61,7 +73,6 @@ func (l *Logger) getField(key string) *Field {
 
 func (l *Logger) setCalldepth(value int) {
 	l.cfg.calldepth = value
-	l.encoder.SetConfig(l.cfg)
 }
 
 func (l *Logger) setFields(fields ...Field) {
@@ -73,7 +84,7 @@ func (l *Logger) setFields(fields ...Field) {
 		}
 	}
 
-	l.encoder.SetConfig(l.cfg)
+	l.encoder.SetFields(l.cfg.Fields)
 }
 
 func (l *Logger) isLevelEnabled(level Level) bool {
@@ -115,14 +126,12 @@ func (l *Logger) SetFields(fields ...Field) {
 func (l *Logger) SetFlags(flag Flag) {
 	l.mu.Lock()
 
-	l.cfg.Flag = flag
 	l.cfg.Datetime = flag&Ldatetime != 0
 	l.cfg.Timestamp = flag&Ltimestamp != 0
 	l.cfg.UTC = flag&LUTC != 0
 	l.cfg.Shortfile = flag&Lshortfile != 0
 	l.cfg.Longfile = flag&Llongfile != 0
-
-	l.encoder.SetConfig(l.cfg)
+	l.cfg.flag = flag
 
 	l.mu.Unlock()
 }
@@ -145,7 +154,7 @@ func (l *Logger) SetOutput(output io.Writer) {
 func (l *Logger) SetEncoder(enc Encoder) {
 	l.mu.Lock()
 	l.encoder = enc
-	l.encoder.SetConfig(l.cfg)
+	l.encoder.SetFields(l.cfg.Fields)
 	l.mu.Unlock()
 }
 

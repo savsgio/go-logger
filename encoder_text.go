@@ -1,11 +1,5 @@
 package logger
 
-import (
-	"time"
-
-	"github.com/valyala/bytebufferpool"
-)
-
 const sepText = " - "
 
 // NewEncoderText creates a new text encoder.
@@ -22,19 +16,17 @@ func (enc *EncoderText) Copy() Encoder {
 }
 
 // SetConfig sets the encoder config and encode the fields.
-func (enc *EncoderText) SetConfig(cfg EncoderConfig) {
-	enc.EncoderBase.SetConfig(cfg)
-
-	if len(cfg.Fields) == 0 {
-		enc.fieldsEncoded = ""
+func (enc *EncoderText) SetFields(fields []Field) {
+	if len(fields) == 0 {
+		enc.SetFieldsEnconded("")
 
 		return
 	}
 
-	buf := bytebufferpool.Get()
+	buf := AcquireBuffer()
 	buf.WriteString("{") // nolint:errcheck
 
-	for i, field := range enc.cfg.Fields {
+	for i, field := range fields {
 		if i > 0 {
 			buf.WriteString(",") // nolint:errcheck
 		}
@@ -42,7 +34,7 @@ func (enc *EncoderText) SetConfig(cfg EncoderConfig) {
 		buf.WriteString("\"")      // nolint:errcheck
 		buf.WriteString(field.Key) // nolint:errcheck
 		buf.WriteString("\":\"")   // nolint:errcheck
-		enc.WriteInterface(buf, field.Value)
+		buf.WriteInterface(field.Value)
 		buf.WriteString("\"") // nolint:errcheck
 	}
 
@@ -51,41 +43,34 @@ func (enc *EncoderText) SetConfig(cfg EncoderConfig) {
 
 	enc.SetFieldsEnconded(buf.String())
 
-	bytebufferpool.Put(buf)
+	ReleaseBuffer(buf)
 }
 
 // Encode encodes the given level string, message and arguments to the buffer.
-func (enc *EncoderText) Encode(buf *bytebufferpool.ByteBuffer, levelStr, msg string, args []interface{}) error {
-	now := time.Now()
-	if enc.cfg.UTC {
-		now = now.UTC()
-	}
-
-	if enc.cfg.Datetime {
-		enc.WriteDatetime(buf, now)
+func (enc *EncoderText) Encode(buf *Buffer, e Entry) error {
+	if e.Config.Datetime {
+		buf.WriteDatetime(e.Time)
 		buf.WriteString(sepText) // nolint:errcheck
 	}
 
-	if enc.cfg.Timestamp {
-		enc.WriteTimestamp(buf, now)
+	if e.Config.Timestamp {
+		buf.WriteTimestamp(e.Time)
 		buf.WriteString(sepText) // nolint:errcheck
 	}
 
-	if levelStr != "" {
+	if levelStr := e.Level.String(); levelStr != "" {
 		buf.WriteString(levelStr) // nolint:errcheck
 		buf.WriteString(sepText)  // nolint:errcheck
 	}
 
-	if enc.cfg.Shortfile || enc.cfg.Longfile {
-		enc.WriteFileCaller(buf)
+	if e.Config.Shortfile || e.Config.Longfile {
+		buf.WriteFileCaller(e.Caller, e.Config.Shortfile)
 		buf.WriteString(sepText) // nolint:errcheck
 	}
 
-	enc.WriteFieldsEnconded(buf)
-
-	enc.WriteMessage(buf, msg, args)
-
-	enc.WriteNewLine(buf)
+	buf.WriteString(enc.FieldsEnconded()) // nolint:errcheck
+	buf.WriteString(e.Message)            // nolint:errcheck
+	buf.WriteNewLine()
 
 	return nil
 }

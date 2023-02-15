@@ -29,13 +29,21 @@ type testLoggerLevelCase struct {
 }
 
 func newTestLogger() *Logger {
-	cfg := newTestEncoderConfig()
+	cfg := newTestConfig()
 
 	l := New(DEBUG, ioutil.Discard)
 	l.SetFields(cfg.Fields...)
-	l.SetFlags(cfg.Flag)
+	l.SetFlags(cfg.flag)
 
 	return l
+}
+
+func assertEncoder(t *testing.T, cfg Config, enc Encoder) {
+	t.Helper()
+
+	if fieldsEncoded := enc.FieldsEnconded(); len(cfg.Fields) > 0 && fieldsEncoded == "" {
+		t.Error("Logger.encoder has not encoded fields")
+	}
 }
 
 func Test_New(t *testing.T) {
@@ -45,10 +53,10 @@ func Test_New(t *testing.T) {
 
 	l := New(level, output, fields...)
 
-	wantCfg := EncoderConfig{
+	wantCfg := Config{
 		Fields:    fields,
-		Flag:      LstdFlags,
 		Datetime:  true,
+		flag:      LstdFlags,
 		calldepth: calldepth,
 	}
 
@@ -72,9 +80,7 @@ func Test_New(t *testing.T) {
 		t.Error("Logger.enconder is not a EncoderText pointer")
 	}
 
-	if encoderCfg := l.encoder.Config(); !reflect.DeepEqual(encoderCfg, l.cfg) {
-		t.Errorf("Logger.enconder.Config() == %v, want %v", encoderCfg, l.cfg)
-	}
+	assertEncoder(t, l.cfg, l.encoder)
 
 	if l.encodeOutput == nil {
 		t.Fatal("Logger.encodeOutput is nil")
@@ -135,10 +141,6 @@ func TestLogger_setCalldepth(t *testing.T) {
 
 	if l.cfg.calldepth != testCalldepth {
 		t.Errorf("calldepth == %d, want %d", l.cfg.calldepth, testCalldepth)
-	}
-
-	if encoderCfg := l.encoder.Config(); encoderCfg.calldepth != testCalldepth {
-		t.Errorf("encoder calldepth == %d, want %d", encoderCfg.calldepth, testCalldepth)
 	}
 }
 
@@ -203,9 +205,7 @@ func TestLogger_setFields(t *testing.T) { // nolint:funlen
 				t.Errorf("length == %d, want %d", totalFields, test.want.totalFields)
 			}
 
-			if encoderCfg := l.encoder.Config(); !reflect.DeepEqual(encoderCfg.Fields, l.cfg.Fields) {
-				t.Errorf("encoder fields == %v, want %v", encoderCfg.Fields, l.cfg.Fields)
-			}
+			assertEncoder(t, l.cfg, l.encoder)
 
 			for _, argField := range test.args.fields {
 				if field := l.getField(argField.Key); !reflect.DeepEqual(field.Value, argField.Value) {
@@ -327,7 +327,7 @@ func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) {
 	}
 
 	type want struct {
-		cfg EncoderConfig
+		cfg Config
 	}
 
 	tests := []struct {
@@ -339,9 +339,9 @@ func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) {
 			name: "datetime",
 			args: args{flag: Ldatetime},
 			want: want{
-				cfg: EncoderConfig{
-					Flag:     Ldatetime,
+				cfg: Config{
 					Datetime: true,
+					flag:     Ldatetime,
 				},
 			},
 		},
@@ -349,9 +349,9 @@ func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) {
 			name: "timestamp",
 			args: args{flag: Ltimestamp},
 			want: want{
-				cfg: EncoderConfig{
-					Flag:      Ltimestamp,
+				cfg: Config{
 					Timestamp: true,
+					flag:      Ltimestamp,
 				},
 			},
 		},
@@ -359,9 +359,9 @@ func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) {
 			name: "utc",
 			args: args{flag: LUTC},
 			want: want{
-				cfg: EncoderConfig{
-					Flag: LUTC,
+				cfg: Config{
 					UTC:  true,
+					flag: LUTC,
 				},
 			},
 		},
@@ -369,9 +369,9 @@ func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) {
 			name: "shortfile",
 			args: args{flag: Lshortfile},
 			want: want{
-				cfg: EncoderConfig{
-					Flag:      Lshortfile,
+				cfg: Config{
 					Shortfile: true,
+					flag:      Lshortfile,
 				},
 			},
 		},
@@ -379,9 +379,9 @@ func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) {
 			name: "longfile",
 			args: args{flag: Llongfile},
 			want: want{
-				cfg: EncoderConfig{
-					Flag:     Llongfile,
+				cfg: Config{
 					Longfile: true,
+					flag:     Llongfile,
 				},
 			},
 		},
@@ -389,9 +389,9 @@ func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) {
 			name: "std",
 			args: args{flag: LstdFlags},
 			want: want{
-				cfg: EncoderConfig{
-					Flag:     LstdFlags,
+				cfg: Config{
 					Datetime: true,
+					flag:     LstdFlags,
 				},
 			},
 		},
@@ -399,13 +399,13 @@ func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) {
 			name: "all",
 			args: args{flag: Ldatetime | Ltimestamp | LUTC | Llongfile | Lshortfile},
 			want: want{
-				cfg: EncoderConfig{
-					Flag:      Ldatetime | Ltimestamp | LUTC | Llongfile | Lshortfile,
+				cfg: Config{
 					Datetime:  true,
 					Timestamp: true,
 					UTC:       true,
 					Shortfile: true,
 					Longfile:  true,
+					flag:      Ldatetime | Ltimestamp | LUTC | Llongfile | Lshortfile,
 				},
 			},
 		},
@@ -419,8 +419,8 @@ func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) {
 
 			setFlagsFunc(test.args.flag)
 
-			if l.cfg.Flag != test.want.cfg.Flag {
-				t.Errorf("Flag == %d, want %d", l.cfg.Flag, test.want.cfg.Flag)
+			if l.cfg.flag != test.want.cfg.flag {
+				t.Errorf("Flag == %d, want %d", l.cfg.flag, test.want.cfg.flag)
 			}
 
 			if l.cfg.Datetime != test.want.cfg.Datetime {
@@ -441,10 +441,6 @@ func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) {
 
 			if l.cfg.Longfile != test.want.cfg.Longfile {
 				t.Errorf("Longfile == %t, want %t", l.cfg.Longfile, test.want.cfg.Longfile)
-			}
-
-			if enconderCfg := l.encoder.Config(); !reflect.DeepEqual(enconderCfg, l.cfg) {
-				t.Errorf("enconder config == %v, want %v", enconderCfg, l.cfg)
 			}
 		})
 	}
@@ -499,6 +495,8 @@ func testLoggerSetEncoder(t *testing.T, l *Logger, setEncoderFunc func(enc Encod
 	if l.encoder != encoder {
 		t.Errorf("encoder == %p, want %p", l.encoder, encoder)
 	}
+
+	assertEncoder(t, l.cfg, l.encoder)
 }
 
 func TestLogger_SetEncoder(t *testing.T) {

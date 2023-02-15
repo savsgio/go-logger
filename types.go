@@ -2,7 +2,9 @@ package logger
 
 import (
 	"io"
+	"runtime"
 	"sync"
+	"time"
 
 	"github.com/valyala/bytebufferpool"
 )
@@ -23,23 +25,36 @@ type Field struct {
 	Value interface{}
 }
 
+type Buffer struct {
+	b1 bytebufferpool.ByteBuffer
+	b2 bytebufferpool.ByteBuffer
+}
+
+type Entry struct {
+	Config  Config
+	Time    time.Time
+	Level   Level
+	Caller  runtime.Frame
+	Message string
+}
+
 // EncoderConfig is the encoder configuration.
-type EncoderConfig struct {
+type Config struct {
 	Fields    []Field
-	Flag      Flag
 	Datetime  bool
 	Timestamp bool
 	UTC       bool
 	Shortfile bool
 	Longfile  bool
 
+	flag      Flag
 	calldepth int
 }
 
 // Logger type.
 type Logger struct {
 	mu           sync.RWMutex // ensures atomic writes; protects the following fields
-	cfg          EncoderConfig
+	cfg          Config
 	level        Level
 	output       io.Writer
 	encoder      Encoder
@@ -50,14 +65,14 @@ type Logger struct {
 // Encoder is the interface of encoders.
 type Encoder interface {
 	Copy() Encoder
-	Config() EncoderConfig
-	SetConfig(cfg EncoderConfig)
-	Encode(buf *bytebufferpool.ByteBuffer, levelStr, msg string, args []interface{}) error
+	FieldsEnconded() string
+	SetFieldsEnconded(fieldsEncoded string)
+	SetFields(fields []Field)
+	Encode(*Buffer, Entry) error
 }
 
 // EncoderBase is the base of encoders.
 type EncoderBase struct {
-	cfg           EncoderConfig
 	fieldsEncoded string
 }
 

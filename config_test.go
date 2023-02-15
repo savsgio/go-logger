@@ -5,15 +5,15 @@ import (
 	"testing"
 )
 
-func newTestEncoderConfig() EncoderConfig {
-	return EncoderConfig{
+func newTestConfig() Config {
+	return Config{
 		Fields: []Field{
 			{"test", true},
 		},
 	}
 }
 
-func testEncoderConfigCopy(t *testing.T, cfg1, cfg2 EncoderConfig) {
+func testConfigCopy(t *testing.T, cfg1, cfg2 Config) {
 	t.Helper()
 
 	cfg1Fields := cfg1.Fields
@@ -35,9 +35,9 @@ func testEncoderConfigCopy(t *testing.T, cfg1, cfg2 EncoderConfig) {
 	}
 }
 
-func TestEncoderConfig_Copy(t *testing.T) {
-	cfg := newTestEncoderConfig()
+func TestConfig_Copy(t *testing.T) {
+	cfg := newTestConfig()
 	copyCfg := cfg.Copy()
 
-	testEncoderConfigCopy(t, cfg, copyCfg)
+	testConfigCopy(t, cfg, copyCfg)
 }
