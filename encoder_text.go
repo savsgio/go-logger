@@ -18,7 +18,7 @@ func (enc *EncoderText) Copy() Encoder {
 // SetFields encodes and sets the given fields.
 func (enc *EncoderText) SetFields(fields []Field) {
 	if len(fields) == 0 {
-		enc.SetFieldsEnconded("")
+		enc.SetFieldsEncoded("")
 
 		return
 	}
@@ -41,7 +41,7 @@ func (enc *EncoderText) SetFields(fields []Field) {
 	buf.WriteString("}")     // nolint:errcheck
 	buf.WriteString(sepText) // nolint:errcheck
 
-	enc.SetFieldsEnconded(buf.String())
+	enc.SetFieldsEncoded(buf.String())
 
 	ReleaseBuffer(buf)
 }
@@ -68,8 +68,8 @@ func (enc *EncoderText) Encode(buf *Buffer, e Entry) error {
 		buf.WriteString(sepText) // nolint:errcheck
 	}
 
-	buf.WriteString(enc.FieldsEnconded()) // nolint:errcheck
-	buf.WriteString(e.Message)            // nolint:errcheck
+	buf.WriteString(enc.FieldsEncoded()) // nolint:errcheck
+	buf.WriteString(e.Message)           // nolint:errcheck
 	buf.WriteNewLine()
 
 	return nil

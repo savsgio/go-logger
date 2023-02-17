@@ -41,7 +41,7 @@ func newTestLogger() *Logger {
 func assertEncoder(t *testing.T, cfg Config, enc Encoder) {
 	t.Helper()
 
-	if fieldsEncoded := enc.FieldsEnconded(); len(cfg.Fields) > 0 && fieldsEncoded == "" {
+	if fieldsEncoded := enc.FieldsEncoded(); len(cfg.Fields) > 0 && fieldsEncoded == "" {
 		t.Error("Logger.encoder has not encoded fields")
 	}
 }

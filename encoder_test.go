@@ -35,23 +35,23 @@ type testEncodeCase struct {
 }
 
 type mockEncoder struct {
-	copy              func() Encoder
-	fieldsEnconded    func() string
-	setFieldsEnconded func(string)
-	setFields         func([]Field)
-	encode            func(*Buffer, Entry) error
+	copy             func() Encoder
+	fieldsEncoded    func() string
+	setFieldsEncoded func(string)
+	setFields        func([]Field)
+	encode           func(*Buffer, Entry) error
 }
 
 func (enc *mockEncoder) Copy() Encoder {
 	return enc.copy()
 }
 
-func (enc *mockEncoder) FieldsEnconded() string {
-	return enc.fieldsEnconded()
+func (enc *mockEncoder) FieldsEncoded() string {
+	return enc.fieldsEncoded()
 }
 
-func (enc *mockEncoder) SetFieldsEnconded(fieldsEncoded string) {
-	enc.setFieldsEnconded(fieldsEncoded)
+func (enc *mockEncoder) SetFieldsEncoded(fieldsEncoded string) {
+	enc.setFieldsEncoded(fieldsEncoded)
 }
 
 func (enc *mockEncoder) SetFields(fields []Field) {
@@ -171,20 +171,20 @@ func TestEncoderBase_Copy(t *testing.T) {
 	testEncoderBaseCopy(t, enc, copyEnc)
 }
 
-func TestEncoderBase_FieldsEnconded(t *testing.T) {
+func TestEncoderBase_FieldsEncoded(t *testing.T) {
 	enc := newTestEncoderBase()
 	enc.fieldsEncoded = "v1 - v2 - v3"
 
-	if fieldsEncoded := enc.FieldsEnconded(); enc.fieldsEncoded != fieldsEncoded {
+	if fieldsEncoded := enc.FieldsEncoded(); enc.fieldsEncoded != fieldsEncoded {
 		t.Errorf("fieldsEncoded == %s, want %s", enc.fieldsEncoded, fieldsEncoded)
 	}
 }
 
-func TestEncoderBase_SetFieldsEnconded(t *testing.T) {
+func TestEncoderBase_SetFieldsEncoded(t *testing.T) {
 	fieldsEncoded := "v1 - v2 - v3"
 
 	enc := newTestEncoderBase()
-	enc.SetFieldsEnconded(fieldsEncoded)
+	enc.SetFieldsEncoded(fieldsEncoded)
 
 	if enc.fieldsEncoded != fieldsEncoded {
 		t.Errorf("fieldsEncoded == %s, want %s", enc.fieldsEncoded, fieldsEncoded)

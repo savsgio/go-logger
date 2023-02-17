@@ -87,7 +87,7 @@ func TestEncoderJSON_SetFields(t *testing.T) { // nolint:funlen
 			enc := newTestEncoderJSON()
 			enc.SetFields(test.args.fields)
 
-			if fieldsEncoded := enc.FieldsEnconded(); fieldsEncoded != test.want.fieldsEncoded {
+			if fieldsEncoded := enc.FieldsEncoded(); fieldsEncoded != test.want.fieldsEncoded {
 				t.Errorf("fieldsEncoded == %s, want %s", fieldsEncoded, test.want.fieldsEncoded)
 			}
 		})

@@ -12,12 +12,12 @@ func (enc *EncoderBase) Copy() *EncoderBase {
 	return copyEnc
 }
 
-// FieldsEnconded returns the encoded fields.
-func (enc *EncoderBase) FieldsEnconded() string {
+// FieldsEncoded returns the encoded fields.
+func (enc *EncoderBase) FieldsEncoded() string {
 	return enc.fieldsEncoded
 }
 
-// SetFieldsEnconded sets the fields enconded.
-func (enc *EncoderBase) SetFieldsEnconded(fieldsEncoded string) {
+// SetFieldsEncoded sets the fields enconded.
+func (enc *EncoderBase) SetFieldsEncoded(fieldsEncoded string) {
 	enc.fieldsEncoded = fieldsEncoded
 }

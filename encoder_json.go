@@ -29,7 +29,7 @@ func (enc *EncoderJSON) SetFields(fields []Field) {
 		buf.WriteString("\",") // nolint:errcheck
 	}
 
-	enc.SetFieldsEnconded(buf.String())
+	enc.SetFieldsEncoded(buf.String())
 
 	ReleaseBuffer(buf)
 }
@@ -62,8 +62,8 @@ func (enc *EncoderJSON) Encode(buf *Buffer, e Entry) error {
 		buf.WriteString("\",") // nolint:errcheck
 	}
 
-	buf.WriteString(enc.FieldsEnconded()) // nolint:errcheck
-	buf.WriteString("\"message\":\"")     // nolint:errcheck
+	buf.WriteString(enc.FieldsEncoded()) // nolint:errcheck
+	buf.WriteString("\"message\":\"")    // nolint:errcheck
 
 	n := buf.Len()
 	buf.WriteString(e.Message) // nolint:errcheck

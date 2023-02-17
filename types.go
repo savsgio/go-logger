@@ -67,8 +67,8 @@ type Logger struct {
 // Encoder is the interface of encoders.
 type Encoder interface {
 	Copy() Encoder
-	FieldsEnconded() string
-	SetFieldsEnconded(fieldsEncoded string)
+	FieldsEncoded() string
+	SetFieldsEncoded(fieldsEncoded string)
 	SetFields(fields []Field)
 	Encode(*Buffer, Entry) error
 }
