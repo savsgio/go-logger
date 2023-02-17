@@ -18,7 +18,6 @@ type testLoggerLevelArgs struct {
 
 type testLoggerLevelWant struct {
 	level    Level
-	levelStr string
 	exitCode int
 }
 
@@ -32,6 +31,7 @@ func newTestLogger() *Logger {
 	cfg := newTestConfig()
 
 	l := New(DEBUG, ioutil.Discard)
+	l.setCalldepth(cfg.calldepth)
 	l.SetFields(cfg.Fields...)
 	l.SetFlags(cfg.flag)
 
@@ -43,6 +43,70 @@ func assertEncoder(t *testing.T, cfg Config, enc Encoder) {
 
 	if fieldsEncoded := enc.FieldsEnconded(); len(cfg.Fields) > 0 && fieldsEncoded == "" {
 		t.Error("Logger.encoder has not encoded fields")
+	}
+}
+
+func Test_newEncodeOutputFunc(t *testing.T) { // nolint:funlen
+	msg := "hello %s"
+	args := []interface{}{"men"}
+	level := DEBUG
+	output := new(bytes.Buffer)
+
+	l := newTestLogger()
+	l.SetOutput(output)
+
+	var wantResult string
+
+	enc := new(mockEncoder)
+	enc.setFields = func(f []Field) {}
+	enc.encode = func(buf *Buffer, e Entry) error {
+		t.Helper()
+
+		if buf == nil {
+			t.Error("nil buffer")
+		}
+
+		if !reflect.DeepEqual(e.Config, l.cfg) {
+			t.Errorf("entry config == %v, want %v", e.Config, l.cfg)
+		}
+
+		if e.Level != level {
+			t.Errorf("entry level == %s, want %s", e.Level, level)
+		}
+
+		wantResult = buf.formatMessage(msg, args)
+		if e.Message != wantResult {
+			t.Errorf("entry message == %s, want %s", e.Message, wantResult)
+		}
+
+		if e.Time.IsZero() {
+			t.Error("entry time is zeo")
+		}
+
+		if !e.Time.Equal(e.Time.UTC()) {
+			t.Error("entry time is not in UTC")
+		}
+
+		if e.Caller.File == "" || e.Caller.Line == 0 {
+			t.Error("entry caller undefined")
+		}
+
+		_, err := buf.WriteString(e.Message)
+
+		return err
+	}
+
+	l.SetEncoder(enc)
+
+	fn := newEncodeOutputFunc(l)
+	if fn == nil {
+		t.Fatal("nil function")
+	}
+
+	fn(level, msg, args)
+
+	if result := output.String(); result != wantResult {
+		t.Errorf("output result == %s, want %s", result, wantResult)
 	}
 }
 
@@ -619,7 +683,6 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    PRINT,
-				levelStr: printLevelStr,
 				exitCode: -1,
 			},
 		},
@@ -631,7 +694,6 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    TRACE,
-				levelStr: traceLevelStr,
 				exitCode: -1,
 			},
 		},
@@ -643,7 +705,6 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    FATAL,
-				levelStr: fatalLevelStr,
 				exitCode: 1,
 			},
 		},
@@ -655,7 +716,6 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    ERROR,
-				levelStr: errorLevelStr,
 				exitCode: -1,
 			},
 		},
@@ -667,7 +727,6 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    WARNING,
-				levelStr: warningLevelStr,
 				exitCode: -1,
 			},
 		},
@@ -679,7 +738,6 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    INFO,
-				levelStr: infoLevelStr,
 				exitCode: -1,
 			},
 		},
@@ -691,7 +749,6 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    DEBUG,
-				levelStr: debugLevelStr,
 				exitCode: -1,
 			},
 		},

@@ -8,8 +8,14 @@ import (
 func newTestConfig() Config {
 	return Config{
 		Fields: []Field{
-			{"test", true},
+			{"url", `GET "https://example.com"`},
 		},
+		Datetime:  true,
+		Timestamp: true,
+		UTC:       true,
+		Shortfile: true,
+		Longfile:  false,
+		flag:      Ldatetime | Ltimestamp | LUTC | Lshortfile,
 	}
 }
 

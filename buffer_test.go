@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"bytes"
 	"fmt"
 	"path"
 	"strconv"
@@ -76,7 +77,7 @@ func TestBuffer_hasBytesSpecialChars(t *testing.T) { // nolint:funlen
 	}
 }
 
-func TestEncoderJSON_writeEscapedBytes(t *testing.T) { // nolint:funlen
+func TestBuffer_writeEscapedBytes(t *testing.T) { // nolint:funlen
 	type args struct {
 		value []byte
 	}
@@ -129,7 +130,7 @@ func TestEncoderJSON_writeEscapedBytes(t *testing.T) { // nolint:funlen
 	}
 }
 
-func TestEncoderBase_formatMessage(t *testing.T) { // nolint:funlen
+func TestBuffer_formatMessage(t *testing.T) { // nolint:funlen
 	type args struct {
 		msg  string
 		args []interface{}
@@ -203,7 +204,59 @@ func TestEncoderBase_formatMessage(t *testing.T) { // nolint:funlen
 	}
 }
 
-func TestEncoderJSON_Escape(t *testing.T) { // nolint:funlen
+func TestBuffer_Reset(t *testing.T) {
+	buf := NewBuffer()
+
+	buf.WriteString("hello world") // nolint:errcheck
+	buf.formatMessage("yeah %s", []interface{}{"sir"})
+
+	buf.Reset()
+
+	if result := buf.b1.Len(); result > 0 {
+		t.Errorf("Buffer.b1 length is not zero")
+	}
+
+	if result := buf.b2.Len(); result > 0 {
+		t.Errorf("Buffer.b2 length is not zero")
+	}
+}
+
+func TestBuffer_Len(t *testing.T) {
+	buf := NewBuffer()
+
+	buf.WriteString("hello world") // nolint:errcheck
+	buf.formatMessage("yeah %s", []interface{}{"sir"})
+
+	wantLen := buf.b1.Len()
+
+	if result := buf.Len(); result != wantLen {
+		t.Errorf("result == %d, want %d", result, wantLen)
+	}
+}
+
+func TestBuffer_String(t *testing.T) {
+	buf := NewBuffer()
+	wantString := "hello sir"
+
+	buf.WriteString(wantString) // nolint:errcheck
+
+	if result := buf.String(); result != wantString {
+		t.Errorf("result == %s, want %s", result, wantString)
+	}
+}
+
+func TestBuffer_Bytes(t *testing.T) {
+	buf := NewBuffer()
+	wantString := "hello men"
+
+	buf.WriteString(wantString) // nolint:errcheck
+
+	if result := buf.Bytes(); string(result) != wantString {
+		t.Errorf("result == %s, want %s", result, wantString)
+	}
+}
+
+func TestBuffer_Escape(t *testing.T) { // nolint:funlen
 	type args struct {
 		value []byte
 	}
@@ -263,7 +316,54 @@ func TestEncoderJSON_Escape(t *testing.T) { // nolint:funlen
 	}
 }
 
-func TestEncoderBase_WriteDatetime(t *testing.T) {
+func TestBuffer_Write(t *testing.T) {
+	buf := NewBuffer()
+	wantValue := []byte("hello world")
+
+	buf.Write(wantValue) // nolint:errcheck
+
+	if result := buf.b1.Bytes(); string(result) != string(wantValue) {
+		t.Errorf("result == %s, want %s", result, wantValue)
+	}
+}
+
+func TestBuffer_WriteByte(t *testing.T) {
+	buf := NewBuffer()
+	wantValue := byte('b')
+
+	buf.WriteByte(wantValue) // nolint:errcheck
+
+	if result := buf.b1.Bytes(); string(result) != string(wantValue) {
+		t.Errorf("result == %v, want %v", result, wantValue)
+	}
+}
+
+func TestBuffer_WriteString(t *testing.T) {
+	buf := NewBuffer()
+	wantValue := "hello world"
+
+	buf.WriteString(wantValue) // nolint:errcheck
+
+	if result := buf.b1.String(); result != wantValue {
+		t.Errorf("result == %s, want %s", result, wantValue)
+	}
+}
+
+func TestBuffer_WriteTo(t *testing.T) {
+	buf := NewBuffer()
+	wantValue := "hello world"
+
+	dst := new(bytes.Buffer)
+
+	buf.WriteString(wantValue) // nolint:errcheck
+	buf.WriteTo(dst)           // nolint:errcheck
+
+	if result := dst.String(); result != wantValue {
+		t.Errorf("result == %s, want %s", result, wantValue)
+	}
+}
+
+func TestBuffer_WriteDatetime(t *testing.T) {
 	buf := NewBuffer()
 	now := time.Now()
 
@@ -276,7 +376,7 @@ func TestEncoderBase_WriteDatetime(t *testing.T) {
 	}
 }
 
-func TestEncoderBase_WriteTimestamp(t *testing.T) {
+func TestBuffer_WriteTimestamp(t *testing.T) {
 	buf := NewBuffer()
 	now := time.Now()
 
@@ -289,7 +389,7 @@ func TestEncoderBase_WriteTimestamp(t *testing.T) {
 	}
 }
 
-func TestEncoderBase_WriteFileCaller(t *testing.T) {
+func TestBuffer_WriteFileCaller(t *testing.T) {
 	caller := getFileCaller(2)
 
 	// Short
@@ -318,7 +418,7 @@ func TestEncoderBase_WriteFileCaller(t *testing.T) {
 	})
 }
 
-func TestEncoderJSON_WriteInterface(t *testing.T) {
+func TestBuffer_WriteInterface(t *testing.T) {
 	buf := NewBuffer()
 	value := []int{1, 2, 3}
 
@@ -331,7 +431,7 @@ func TestEncoderJSON_WriteInterface(t *testing.T) {
 	}
 }
 
-func TestEncoderBase_WriteNewLine(t *testing.T) {
+func TestBuffer_WriteNewLine(t *testing.T) {
 	buf := NewBuffer()
 
 	str := "foo"

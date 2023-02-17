@@ -34,6 +34,34 @@ type testEncodeCase struct {
 	want testEncodeWant
 }
 
+type mockEncoder struct {
+	copy              func() Encoder
+	fieldsEnconded    func() string
+	setFieldsEnconded func(string)
+	setFields         func([]Field)
+	encode            func(*Buffer, Entry) error
+}
+
+func (enc *mockEncoder) Copy() Encoder {
+	return enc.copy()
+}
+
+func (enc *mockEncoder) FieldsEnconded() string {
+	return enc.fieldsEnconded()
+}
+
+func (enc *mockEncoder) SetFieldsEnconded(fieldsEncoded string) {
+	enc.setFieldsEnconded(fieldsEncoded)
+}
+
+func (enc *mockEncoder) SetFields(fields []Field) {
+	enc.setFields(fields)
+}
+
+func (enc *mockEncoder) Encode(buf *Buffer, e Entry) error {
+	return enc.encode(buf, e)
+}
+
 func testEncoderEncode(t *testing.T, enc Encoder, testCases []testEncodeCase) {
 	t.Helper()
 
@@ -88,23 +116,15 @@ func benchmarkEncoderEncode(b *testing.B, enc Encoder) {
 	buf := AcquireBuffer()
 	defer ReleaseBuffer(buf)
 
-	cfg := Config{
-		Fields:    []Field{{"url", `GET "https://example.com"`}},
-		UTC:       true,
-		Datetime:  true,
-		Timestamp: true,
-		Shortfile: true,
-		Longfile:  false,
-	}
 	e := Entry{
-		Config:  cfg,
+		Config:  newTestConfig(),
 		Time:    time.Now().UTC(),
 		Level:   DEBUG,
 		Caller:  getFileCaller(4),
 		Message: `failed to request: jojoj""""`,
 	}
 
-	enc.SetFields(cfg.Fields)
+	enc.SetFields(e.Config.Fields)
 
 	b.ResetTimer()
 
