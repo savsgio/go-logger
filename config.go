@@ -1,5 +1,6 @@
 package logger
 
+// Copy returns a copy of the config.
 func (e Config) Copy() Config {
 	e2 := e
 

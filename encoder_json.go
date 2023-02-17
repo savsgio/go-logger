@@ -13,7 +13,7 @@ func (enc *EncoderJSON) Copy() Encoder {
 	return copyEnc
 }
 
-// SetConfig sets the encoder config and encode the fields.
+// SetFields encodes and sets the given fields.
 func (enc *EncoderJSON) SetFields(fields []Field) {
 	buf := AcquireBuffer()
 
@@ -34,7 +34,7 @@ func (enc *EncoderJSON) SetFields(fields []Field) {
 	ReleaseBuffer(buf)
 }
 
-// Encode encodes the given level string, message and arguments to the buffer.
+// Encode encodes the given entry to the buffer.
 func (enc *EncoderJSON) Encode(buf *Buffer, e Entry) error {
 	buf.WriteByte('{') // nolint:errcheck
 

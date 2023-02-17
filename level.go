@@ -29,6 +29,7 @@ func ParseLevel(levelStr string) (level Level, err error) {
 	return level, err
 }
 
+// Strings returns the string representation of the level.
 func (l Level) String() string {
 	switch l {
 	case PRINT:

@@ -25,11 +25,13 @@ type Field struct {
 	Value interface{}
 }
 
+// Buffer provides the byte buffer used by encoders to encode the output.
 type Buffer struct {
 	b1 bytebufferpool.ByteBuffer
 	b2 bytebufferpool.ByteBuffer
 }
 
+// Entry collects all the information for the output.
 type Entry struct {
 	Config  Config
 	Time    time.Time
@@ -38,7 +40,7 @@ type Entry struct {
 	Message string
 }
 
-// EncoderConfig is the encoder configuration.
+// Config is the logger configuration.
 type Config struct {
 	Fields    []Field
 	Datetime  bool

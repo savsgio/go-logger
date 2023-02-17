@@ -19,14 +19,17 @@ var bufferPool = sync.Pool{
 	},
 }
 
+// NewBuffer returns a new buffer.
 func NewBuffer() *Buffer {
 	return new(Buffer)
 }
 
+// AcquireBuffer returns a buffer instance from pool.
 func AcquireBuffer() *Buffer {
 	return bufferPool.Get().(*Buffer) // nolint:forcetypeassert
 }
 
+// ReleaseBuffer puts the given buffer in the pool after it is reset.
 func ReleaseBuffer(b *Buffer) {
 	b.Reset()
 	bufferPool.Put(b)
@@ -80,6 +83,7 @@ func (b *Buffer) formatMessage(msg string, args []interface{}) string {
 	return gstrconv.B2S(b.b2.Bytes()[startAt:])
 }
 
+// Reset clears the buffer.
 func (b *Buffer) Reset() {
 	b.b1.Reset()
 	b.b2.Reset()
@@ -100,6 +104,7 @@ func (b *Buffer) Bytes() []byte {
 	return b.b1.Bytes()
 }
 
+// Escape escapes accumulated bytes since the given index.
 func (b *Buffer) Escape(startAt int) {
 	if value := b.b1.B[startAt:]; b.hasBytesSpecialChars(value) {
 		b.b1.Set(b.b1.B[:startAt])

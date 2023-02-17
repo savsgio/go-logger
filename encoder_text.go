@@ -15,7 +15,7 @@ func (enc *EncoderText) Copy() Encoder {
 	return copyEnc
 }
 
-// SetConfig sets the encoder config and encode the fields.
+// SetFields encodes and sets the given fields.
 func (enc *EncoderText) SetFields(fields []Field) {
 	if len(fields) == 0 {
 		enc.SetFieldsEnconded("")
@@ -46,7 +46,7 @@ func (enc *EncoderText) SetFields(fields []Field) {
 	ReleaseBuffer(buf)
 }
 
-// Encode encodes the given level string, message and arguments to the buffer.
+// Encode encodes the given entry to the buffer.
 func (enc *EncoderText) Encode(buf *Buffer, e Entry) error {
 	if e.Config.Datetime {
 		buf.WriteDatetime(e.Time)

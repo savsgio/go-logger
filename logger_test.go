@@ -763,6 +763,7 @@ func BenchmarkLogger_Levels(b *testing.B) { // nolint:funlen
 	// l.SetFlags(Ltimestamp)
 	l.SetFields(Field{Key: "hola", Value: 1}, Field{Key: "adios", Value: 2})
 	l.SetLevel(DEBUG)
+	// l.SetFlags(0)
 
 	l.exit = func(code int) {}
 
