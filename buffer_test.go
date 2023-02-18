@@ -3,7 +3,7 @@ package logger
 import (
 	"bytes"
 	"fmt"
-	"path"
+	"path/filepath"
 	"strconv"
 	"testing"
 	"time"
@@ -397,7 +397,7 @@ func TestBuffer_WriteFileCaller(t *testing.T) {
 		buf := NewBuffer()
 		buf.WriteFileCaller(caller, true)
 
-		_, filename := path.Split(caller.File)
+		_, filename := filepath.Split(caller.File)
 
 		wantFileCaller := fmt.Sprintf("%s:%d", filename, caller.Line)
 

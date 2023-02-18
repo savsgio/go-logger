@@ -2,7 +2,7 @@ package logger
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 	"runtime"
 	"testing"
 )
@@ -32,7 +32,7 @@ func Test_getFileCaller(t *testing.T) { // nolint:funlen
 			},
 			want: want{
 				frame: runtime.Frame{
-					File: path.Join(cwd, "utils_test.go"),
+					File: filepath.Join(cwd, "utils_test.go"),
 					Line: 60,
 				},
 			},
@@ -59,8 +59,11 @@ func Test_getFileCaller(t *testing.T) { // nolint:funlen
 
 			frame := getFileCaller(test.args.calldepth)
 
-			if frame.File != test.want.frame.File {
-				t.Errorf("file == %s, want %s", frame.File, test.want.frame.File)
+			frameFile := filepath.ToSlash(frame.File)
+			wantFile := filepath.ToSlash(test.want.frame.File)
+
+			if frameFile != wantFile {
+				t.Errorf("file == %s, want %s", frameFile, wantFile)
 			}
 
 			if frame.Line != test.want.frame.Line {
