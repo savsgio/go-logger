@@ -18,6 +18,8 @@ func newEncodeOutputFunc(l *Logger) encodeOutputFunc {
 				Level:   level,
 				Message: buf.formatMessage(msg, args),
 			}
+			e.Caller.File = unknownFile
+			e.Caller.Line = 0
 
 			if l.cfg.Datetime || l.cfg.Timestamp {
 				e.Time = time.Now()

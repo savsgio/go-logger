@@ -24,6 +24,8 @@ const (
 
 const calldepth = 6
 
+const unknownFile = "???"
+
 const (
 	printLevelStr   = ""
 	traceLevelStr   = "TRACE"

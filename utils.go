@@ -9,7 +9,7 @@ func getFileCaller(calldepth int) (frame runtime.Frame) {
 
 	numFrames := runtime.Callers(calldepth, pc)
 	if numFrames < 1 {
-		frame.File = "???"
+		frame.File = unknownFile
 		frame.Line = 0
 	} else {
 		frame, _ = runtime.CallersFrames(pc).Next()
