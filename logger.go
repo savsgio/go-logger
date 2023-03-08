@@ -95,7 +95,7 @@ func (l *Logger) isLevelEnabled(level Level) bool {
 	return l.level >= level
 }
 
-func (l *Logger) clone() *Logger {
+func (l *Logger) copy() *Logger {
 	l2 := new(Logger)
 	l2.cfg = l.cfg.Copy()
 	l2.level = l.level
@@ -112,7 +112,7 @@ func (l *Logger) clone() *Logger {
 func (l *Logger) WithFields(fields ...Field) *Logger {
 	l.mu.RLock()
 
-	l2 := l.clone()
+	l2 := l.copy()
 	l2.setFields(fields...)
 
 	l.mu.RUnlock()

@@ -316,11 +316,11 @@ func TestLogger_isLevelEnabled(t *testing.T) {
 	}
 }
 
-func TestLogger_clone(t *testing.T) {
+func TestLogger_copy(t *testing.T) {
 	l1 := newTestLogger()
 	l1.SetOutput(new(bytes.Buffer))
 
-	l2 := l1.clone()
+	l2 := l1.copy()
 
 	l1Fields := l1.cfg.Fields
 	l2Fields := l2.cfg.Fields
