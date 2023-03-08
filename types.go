@@ -13,6 +13,11 @@ type encodeOutputFunc func(level Level, msg string, args []interface{})
 
 type exitFunc func(code int)
 
+type levelHooks struct {
+	store     map[Level][]Hook
+	errOutput io.Writer
+}
+
 // Level type.
 type Level int
 
@@ -61,10 +66,24 @@ type Logger struct {
 	output       io.Writer
 	encoder      Encoder
 	encodeOutput encodeOutputFunc
+	hooks        *levelHooks
 	exit         exitFunc
 }
 
-// Encoder is the interface of encoders.
+// Hook represents a extended functionality that will be fired when logging.
+//
+// NOTE: This is not run concurrently, so be quite with locks.
+type Hook interface {
+	// Levels returns the levels at which the hook fires.
+	Levels() []Level
+
+	// Fire is hook function.
+	//
+	// NOTE: The returned error will be written to `os.Stderr`.
+	Fire(Entry) error
+}
+
+// Encoder represents the encoders contract.
 type Encoder interface {
 	Copy() Encoder
 	FieldsEncoded() string

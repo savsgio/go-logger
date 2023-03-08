@@ -2,6 +2,7 @@ package logger
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"io/ioutil"
 	"os"
@@ -98,6 +99,20 @@ func Test_newEncodeOutputFunc(t *testing.T) { // nolint:funlen
 
 	l.SetEncoder(enc)
 
+	hookFired := false
+	hook := &testHook{
+		levels: []Level{level},
+		fireFunc: func(e Entry) error {
+			hookFired = true
+
+			return nil
+		},
+	}
+
+	if err := l.AddHook(hook); err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
 	fn := newEncodeOutputFunc(l)
 	if fn == nil {
 		t.Fatal("nil function")
@@ -107,6 +122,10 @@ func Test_newEncodeOutputFunc(t *testing.T) { // nolint:funlen
 
 	if result := output.String(); result != wantResult {
 		t.Errorf("output result == %s, want %s", result, wantResult)
+	}
+
+	if !hookFired {
+		t.Errorf("hook not fired")
 	}
 }
 
@@ -334,6 +353,13 @@ func TestLogger_clone(t *testing.T) {
 
 	if l2EncodeOutputPtr != l1EncodeOutputPtr {
 		t.Errorf("encodeOutput == %p, want %p", l2.encodeOutput, l1.encodeOutput)
+	}
+
+	l1HooksPtr := reflect.ValueOf(l1.hooks).Pointer()
+	l2HooksPtr := reflect.ValueOf(l2.hooks).Pointer()
+
+	if l1HooksPtr == l2HooksPtr {
+		t.Error("hooks has the same pointer")
 	}
 
 	l1ExitPtr := reflect.ValueOf(l1.exit).Pointer()
@@ -589,6 +615,61 @@ func testLoggerIsLevelEnabled(t *testing.T, l *Logger, isLevelEnabledFunc func(l
 func TestLogger_IsLevelEnabled(t *testing.T) {
 	l := newTestLogger()
 	testLoggerIsLevelEnabled(t, l, l.IsLevelEnabled)
+}
+
+func TestLogger_AddHook(t *testing.T) {
+	type args struct {
+		hook *testHook
+	}
+
+	type want struct {
+		err error
+	}
+
+	tests := []struct {
+		args args
+		want want
+	}{
+		{
+			args: args{
+				hook: &testHook{
+					levels:   levels,
+					fireFunc: func(e Entry) error { return nil },
+				},
+			},
+			want: want{
+				err: nil,
+			},
+		},
+		{
+			args: args{
+				hook: &testHook{
+					levels: []Level{},
+				},
+			},
+			want: want{
+				err: ErrEmptyHookLevels,
+			},
+		},
+	}
+
+	for i := range tests {
+		test := tests[i]
+
+		t.Run("", func(t *testing.T) {
+			l := newTestLogger()
+
+			if err := l.AddHook(test.args.hook); !errors.Is(err, test.want.err) {
+				t.Errorf("error == %v, want %v", err, test.want.err)
+			}
+
+			errorExpected := test.want.err != nil
+
+			if !errorExpected && len(l.hooks.store) == 0 {
+				t.Errorf("hook not added")
+			}
+		})
+	}
 }
 
 func testLoggerLevels(t *testing.T, l *Logger, testCases []testLoggerLevelCase) { // nolint:funlen

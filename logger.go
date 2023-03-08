@@ -35,6 +35,7 @@ func newEncodeOutputFunc(l *Logger) encodeOutputFunc {
 
 			l.encoder.Encode(buf, e)    // nolint:errcheck
 			l.output.Write(buf.Bytes()) // nolint:errcheck
+			l.hooks.fire(e)
 
 			ReleaseBuffer(buf)
 		}
@@ -53,6 +54,7 @@ func New(level Level, output io.Writer, fields ...Field) *Logger {
 	l.output = output
 	l.encoder = NewEncoderText()
 	l.encodeOutput = newEncodeOutputFunc(l)
+	l.hooks = newLevelHooks()
 	l.exit = os.Exit
 
 	l.SetFields(fields...)
@@ -100,6 +102,7 @@ func (l *Logger) clone() *Logger {
 	l2.output = l.output
 	l2.encoder = l.encoder.Copy()
 	l2.encodeOutput = newEncodeOutputFunc(l2)
+	l2.hooks = l.hooks.copy()
 	l2.exit = l.exit
 
 	return l2
@@ -167,6 +170,11 @@ func (l *Logger) IsLevelEnabled(level Level) bool {
 	l.mu.RUnlock()
 
 	return enabled
+}
+
+// AddHook registers the given hook to the logger.
+func (l *Logger) AddHook(h Hook) error {
+	return l.hooks.add(h)
 }
 
 func (l *Logger) Print(msg ...interface{}) {
