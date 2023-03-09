@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sort"
 	"testing"
 	"time"
 )
@@ -30,6 +31,16 @@ func levelInclude(values []Level, level Level) bool {
 	}
 
 	return false
+}
+
+func levelsToInts(levels []Level) (result []int) {
+	for _, l := range levels {
+		result = append(result, int(l))
+	}
+
+	sort.Ints(result)
+
+	return result
 }
 
 func TestLevelHooks_copy(t *testing.T) {
@@ -115,7 +126,10 @@ func TestLevelHooks_add(t *testing.T) { // nolint:funlen
 				}
 			}
 
-			if !reflect.DeepEqual(resultLevels, test.args.hook.levels) {
+			resultLevelsInts := levelsToInts(resultLevels)
+			hookLevels := levelsToInts(test.args.hook.levels)
+
+			if !reflect.DeepEqual(resultLevelsInts, hookLevels) {
 				t.Errorf("hook levels == %v, want %v", resultLevels, test.args.hook.levels)
 			}
 		})
