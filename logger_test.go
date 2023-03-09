@@ -2,6 +2,7 @@ package logger
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"io/ioutil"
 	"os"
@@ -18,7 +19,6 @@ type testLoggerLevelArgs struct {
 
 type testLoggerLevelWant struct {
 	level    Level
-	levelStr string
 	exitCode int
 }
 
@@ -29,13 +29,104 @@ type testLoggerLevelCase struct {
 }
 
 func newTestLogger() *Logger {
-	cfg := newTestEncoderConfig()
+	cfg := newTestConfig()
 
 	l := New(DEBUG, ioutil.Discard)
+	l.setCalldepth(cfg.calldepth)
 	l.SetFields(cfg.Fields...)
-	l.SetFlags(cfg.Flag)
+	l.SetFlags(cfg.flag)
 
 	return l
+}
+
+func assertEncoder(t *testing.T, cfg Config, enc Encoder) {
+	t.Helper()
+
+	if fieldsEncoded := enc.FieldsEncoded(); len(cfg.Fields) > 0 && fieldsEncoded == "" {
+		t.Error("Logger.encoder has not encoded fields")
+	}
+}
+
+func Test_newEncodeOutputFunc(t *testing.T) { // nolint:funlen
+	msg := "hello %s"
+	args := []interface{}{"men"}
+	level := DEBUG
+	output := new(bytes.Buffer)
+
+	l := newTestLogger()
+	l.SetOutput(output)
+
+	var wantResult string
+
+	enc := new(mockEncoder)
+	enc.configure = func(cfg Config) {}
+	enc.encode = func(buf *Buffer, e Entry) error {
+		t.Helper()
+
+		if buf == nil {
+			t.Error("nil buffer")
+		}
+
+		if !reflect.DeepEqual(e.Config, l.cfg) {
+			t.Errorf("entry config == %v, want %v", e.Config, l.cfg)
+		}
+
+		if e.Level != level {
+			t.Errorf("entry level == %s, want %s", e.Level, level)
+		}
+
+		wantResult = buf.formatMessage(msg, args)
+		if e.Message != wantResult {
+			t.Errorf("entry message == %s, want %s", e.Message, wantResult)
+		}
+
+		if e.Time.IsZero() {
+			t.Error("entry time is zeo")
+		}
+
+		if !e.Time.Equal(e.Time.UTC()) {
+			t.Error("entry time is not in UTC")
+		}
+
+		if e.Caller.File == "" || e.Caller.Line == 0 {
+			t.Error("entry caller undefined")
+		}
+
+		_, err := buf.WriteString(e.Message)
+
+		return err
+	}
+
+	l.SetEncoder(enc)
+
+	hookFired := false
+	hook := &testHook{
+		levels: []Level{level},
+		fireFunc: func(e Entry) error {
+			hookFired = true
+
+			return nil
+		},
+	}
+
+	if err := l.AddHook(hook); err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	fn := newEncodeOutputFunc(l)
+	if fn == nil {
+		t.Fatal("nil function")
+	}
+
+	fn(level, msg, args)
+
+	if result := output.String(); result != wantResult {
+		t.Errorf("output result == %s, want %s", result, wantResult)
+	}
+
+	if !hookFired {
+		t.Errorf("hook not fired")
+	}
 }
 
 func Test_New(t *testing.T) {
@@ -45,10 +136,10 @@ func Test_New(t *testing.T) {
 
 	l := New(level, output, fields...)
 
-	wantCfg := EncoderConfig{
+	wantCfg := Config{
 		Fields:    fields,
-		Flag:      LstdFlags,
 		Datetime:  true,
+		flag:      LstdFlags,
 		calldepth: calldepth,
 	}
 
@@ -72,9 +163,7 @@ func Test_New(t *testing.T) {
 		t.Error("Logger.enconder is not a EncoderText pointer")
 	}
 
-	if encoderCfg := l.encoder.Config(); !reflect.DeepEqual(encoderCfg, l.cfg) {
-		t.Errorf("Logger.enconder.Config() == %v, want %v", encoderCfg, l.cfg)
-	}
+	assertEncoder(t, l.cfg, l.encoder)
 
 	if l.encodeOutput == nil {
 		t.Fatal("Logger.encodeOutput is nil")
@@ -114,7 +203,7 @@ func TestLogger_getField(t *testing.T) {
 	field := Field{Key: "key", Value: "value"}
 
 	l := newTestLogger()
-	l.setFields(field)
+	l.SetFields(field)
 
 	result := l.getField(field.Key)
 
@@ -135,10 +224,6 @@ func TestLogger_setCalldepth(t *testing.T) {
 
 	if l.cfg.calldepth != testCalldepth {
 		t.Errorf("calldepth == %d, want %d", l.cfg.calldepth, testCalldepth)
-	}
-
-	if encoderCfg := l.encoder.Config(); encoderCfg.calldepth != testCalldepth {
-		t.Errorf("encoder calldepth == %d, want %d", encoderCfg.calldepth, testCalldepth)
 	}
 }
 
@@ -203,9 +288,7 @@ func TestLogger_setFields(t *testing.T) { // nolint:funlen
 				t.Errorf("length == %d, want %d", totalFields, test.want.totalFields)
 			}
 
-			if encoderCfg := l.encoder.Config(); !reflect.DeepEqual(encoderCfg.Fields, l.cfg.Fields) {
-				t.Errorf("encoder fields == %v, want %v", encoderCfg.Fields, l.cfg.Fields)
-			}
+			assertEncoder(t, l.cfg, l.encoder)
 
 			for _, argField := range test.args.fields {
 				if field := l.getField(argField.Key); !reflect.DeepEqual(field.Value, argField.Value) {
@@ -233,11 +316,11 @@ func TestLogger_isLevelEnabled(t *testing.T) {
 	}
 }
 
-func TestLogger_clone(t *testing.T) {
+func TestLogger_copy(t *testing.T) {
 	l1 := newTestLogger()
 	l1.SetOutput(new(bytes.Buffer))
 
-	l2 := l1.clone()
+	l2 := l1.copy()
 
 	l1Fields := l1.cfg.Fields
 	l2Fields := l2.cfg.Fields
@@ -270,6 +353,13 @@ func TestLogger_clone(t *testing.T) {
 
 	if l2EncodeOutputPtr != l1EncodeOutputPtr {
 		t.Errorf("encodeOutput == %p, want %p", l2.encodeOutput, l1.encodeOutput)
+	}
+
+	l1HooksPtr := reflect.ValueOf(l1.hooks).Pointer()
+	l2HooksPtr := reflect.ValueOf(l2.hooks).Pointer()
+
+	if l1HooksPtr == l2HooksPtr {
+		t.Error("hooks has the same pointer")
 	}
 
 	l1ExitPtr := reflect.ValueOf(l1.exit).Pointer()
@@ -327,7 +417,7 @@ func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) {
 	}
 
 	type want struct {
-		cfg EncoderConfig
+		cfg Config
 	}
 
 	tests := []struct {
@@ -339,9 +429,9 @@ func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) {
 			name: "datetime",
 			args: args{flag: Ldatetime},
 			want: want{
-				cfg: EncoderConfig{
-					Flag:     Ldatetime,
+				cfg: Config{
 					Datetime: true,
+					flag:     Ldatetime,
 				},
 			},
 		},
@@ -349,9 +439,9 @@ func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) {
 			name: "timestamp",
 			args: args{flag: Ltimestamp},
 			want: want{
-				cfg: EncoderConfig{
-					Flag:      Ltimestamp,
+				cfg: Config{
 					Timestamp: true,
+					flag:      Ltimestamp,
 				},
 			},
 		},
@@ -359,9 +449,9 @@ func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) {
 			name: "utc",
 			args: args{flag: LUTC},
 			want: want{
-				cfg: EncoderConfig{
-					Flag: LUTC,
+				cfg: Config{
 					UTC:  true,
+					flag: LUTC,
 				},
 			},
 		},
@@ -369,9 +459,9 @@ func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) {
 			name: "shortfile",
 			args: args{flag: Lshortfile},
 			want: want{
-				cfg: EncoderConfig{
-					Flag:      Lshortfile,
+				cfg: Config{
 					Shortfile: true,
+					flag:      Lshortfile,
 				},
 			},
 		},
@@ -379,9 +469,9 @@ func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) {
 			name: "longfile",
 			args: args{flag: Llongfile},
 			want: want{
-				cfg: EncoderConfig{
-					Flag:     Llongfile,
+				cfg: Config{
 					Longfile: true,
+					flag:     Llongfile,
 				},
 			},
 		},
@@ -389,9 +479,9 @@ func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) {
 			name: "std",
 			args: args{flag: LstdFlags},
 			want: want{
-				cfg: EncoderConfig{
-					Flag:     LstdFlags,
+				cfg: Config{
 					Datetime: true,
+					flag:     LstdFlags,
 				},
 			},
 		},
@@ -399,13 +489,13 @@ func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) {
 			name: "all",
 			args: args{flag: Ldatetime | Ltimestamp | LUTC | Llongfile | Lshortfile},
 			want: want{
-				cfg: EncoderConfig{
-					Flag:      Ldatetime | Ltimestamp | LUTC | Llongfile | Lshortfile,
+				cfg: Config{
 					Datetime:  true,
 					Timestamp: true,
 					UTC:       true,
 					Shortfile: true,
 					Longfile:  true,
+					flag:      Ldatetime | Ltimestamp | LUTC | Llongfile | Lshortfile,
 				},
 			},
 		},
@@ -419,8 +509,8 @@ func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) {
 
 			setFlagsFunc(test.args.flag)
 
-			if l.cfg.Flag != test.want.cfg.Flag {
-				t.Errorf("Flag == %d, want %d", l.cfg.Flag, test.want.cfg.Flag)
+			if l.cfg.flag != test.want.cfg.flag {
+				t.Errorf("Flag == %d, want %d", l.cfg.flag, test.want.cfg.flag)
 			}
 
 			if l.cfg.Datetime != test.want.cfg.Datetime {
@@ -441,10 +531,6 @@ func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) {
 
 			if l.cfg.Longfile != test.want.cfg.Longfile {
 				t.Errorf("Longfile == %t, want %t", l.cfg.Longfile, test.want.cfg.Longfile)
-			}
-
-			if enconderCfg := l.encoder.Config(); !reflect.DeepEqual(enconderCfg, l.cfg) {
-				t.Errorf("enconder config == %v, want %v", enconderCfg, l.cfg)
 			}
 		})
 	}
@@ -492,13 +578,15 @@ func TestLogger_SetOutput(t *testing.T) {
 func testLoggerSetEncoder(t *testing.T, l *Logger, setEncoderFunc func(enc Encoder)) {
 	t.Helper()
 
-	encoder := NewEncoderJSON()
+	encoder := newTestEncoderJSON()
 
 	setEncoderFunc(encoder)
 
 	if l.encoder != encoder {
 		t.Errorf("encoder == %p, want %p", l.encoder, encoder)
 	}
+
+	assertEncoder(t, l.cfg, l.encoder)
 }
 
 func TestLogger_SetEncoder(t *testing.T) {
@@ -527,6 +615,61 @@ func testLoggerIsLevelEnabled(t *testing.T, l *Logger, isLevelEnabledFunc func(l
 func TestLogger_IsLevelEnabled(t *testing.T) {
 	l := newTestLogger()
 	testLoggerIsLevelEnabled(t, l, l.IsLevelEnabled)
+}
+
+func TestLogger_AddHook(t *testing.T) {
+	type args struct {
+		hook *testHook
+	}
+
+	type want struct {
+		err error
+	}
+
+	tests := []struct {
+		args args
+		want want
+	}{
+		{
+			args: args{
+				hook: &testHook{
+					levels:   levels,
+					fireFunc: func(e Entry) error { return nil },
+				},
+			},
+			want: want{
+				err: nil,
+			},
+		},
+		{
+			args: args{
+				hook: &testHook{
+					levels: []Level{},
+				},
+			},
+			want: want{
+				err: ErrEmptyHookLevels,
+			},
+		},
+	}
+
+	for i := range tests {
+		test := tests[i]
+
+		t.Run("", func(t *testing.T) {
+			l := newTestLogger()
+
+			if err := l.AddHook(test.args.hook); !errors.Is(err, test.want.err) {
+				t.Errorf("error == %v, want %v", err, test.want.err)
+			}
+
+			errorExpected := test.want.err != nil
+
+			if !errorExpected && len(l.hooks.store) == 0 {
+				t.Errorf("hook not added")
+			}
+		})
+	}
 }
 
 func testLoggerLevels(t *testing.T, l *Logger, testCases []testLoggerLevelCase) { // nolint:funlen
@@ -621,7 +764,6 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    PRINT,
-				levelStr: printLevelStr,
 				exitCode: -1,
 			},
 		},
@@ -633,7 +775,6 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    TRACE,
-				levelStr: traceLevelStr,
 				exitCode: -1,
 			},
 		},
@@ -645,7 +786,6 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    FATAL,
-				levelStr: fatalLevelStr,
 				exitCode: 1,
 			},
 		},
@@ -657,7 +797,6 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    ERROR,
-				levelStr: errorLevelStr,
 				exitCode: -1,
 			},
 		},
@@ -669,7 +808,6 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    WARNING,
-				levelStr: warningLevelStr,
 				exitCode: -1,
 			},
 		},
@@ -681,7 +819,6 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    INFO,
-				levelStr: infoLevelStr,
 				exitCode: -1,
 			},
 		},
@@ -693,7 +830,6 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    DEBUG,
-				levelStr: debugLevelStr,
 				exitCode: -1,
 			},
 		},
@@ -704,10 +840,11 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 
 func BenchmarkLogger_Levels(b *testing.B) { // nolint:funlen
 	l := newTestLogger()
-	l.SetEncoder(NewEncoderJSON())
+	l.SetEncoder(newTestEncoderJSON())
 	// l.SetFlags(Ltimestamp)
 	l.SetFields(Field{Key: "hola", Value: 1}, Field{Key: "adios", Value: 2})
 	l.SetLevel(DEBUG)
+	// l.SetFlags(0)
 
 	l.exit = func(code int) {}
 

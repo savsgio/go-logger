@@ -4,18 +4,74 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func newTestEncoderText() *EncoderText {
-	enc := NewEncoderText()
-	enc.SetConfig(newTestEncoderConfig())
+	cfg := newTestConfig()
+
+	enc := NewEncoderText(EncoderTextConfig{})
+	enc.Configure(cfg)
 
 	return enc
 }
 
 func Test_NewEncoderText(t *testing.T) {
-	if enc := NewEncoderText(); enc == nil {
-		t.Error("return nil")
+	type args struct {
+		cfg EncoderTextConfig
+	}
+
+	type want struct {
+		cfg EncoderTextConfig
+	}
+
+	tests := []struct {
+		args args
+		want want
+	}{
+		{
+			args: args{
+				cfg: EncoderTextConfig{},
+			},
+			want: want{
+				cfg: EncoderTextConfig{
+					Separator:       defaultTextSeparator,
+					DatetimeLayout:  defaultDatetimeLayout,
+					TimestampFormat: defaultTimestampFormat,
+				},
+			},
+		},
+		{
+			args: args{
+				cfg: EncoderTextConfig{
+					Separator:       "#",
+					DatetimeLayout:  time.RFC1123,
+					TimestampFormat: TimestampFormatNanoseconds,
+				},
+			},
+			want: want{
+				cfg: EncoderTextConfig{
+					Separator:       "#",
+					DatetimeLayout:  time.RFC1123,
+					TimestampFormat: TimestampFormatNanoseconds,
+				},
+			},
+		},
+	}
+
+	for i := range tests {
+		test := tests[i]
+
+		t.Run("", func(t *testing.T) {
+			enc := NewEncoderText(test.args.cfg)
+			if enc == nil {
+				t.Fatal("return nil")
+			}
+
+			if !reflect.DeepEqual(enc.cfg, test.want.cfg) {
+				t.Errorf("confg == %v, want %v", enc.cfg, test.want.cfg)
+			}
+		})
 	}
 }
 
@@ -37,14 +93,16 @@ func TestEncoderText_Copy(t *testing.T) {
 	testEncoderBaseCopy(t, &enc.EncoderBase, &copyEnc.EncoderBase)
 }
 
-func TestEncoderText_SetConfig(t *testing.T) {
+func TestEncoderText_Configure(t *testing.T) {
 	type args struct {
-		cfg EncoderConfig
+		cfg Config
 	}
 
 	type want struct {
 		fieldsEncoded string
 	}
+
+	enc := newTestEncoderText()
 
 	tests := []struct {
 		args args
@@ -52,10 +110,7 @@ func TestEncoderText_SetConfig(t *testing.T) {
 	}{
 		{
 			args: args{
-				cfg: EncoderConfig{
-					Timestamp: true,
-					Flag:      Ltimestamp,
-				},
+				cfg: Config{},
 			},
 			want: want{
 				fieldsEncoded: "",
@@ -63,14 +118,12 @@ func TestEncoderText_SetConfig(t *testing.T) {
 		},
 		{
 			args: args{
-				cfg: EncoderConfig{
-					Timestamp: true,
-					Flag:      Ltimestamp,
-					Fields:    []Field{{"foo", "bar"}, {"buzz", []int{1, 2, 3}}},
+				cfg: Config{
+					Fields: []Field{{"foo", "bar"}, {"buzz", []int{1, 2, 3}}},
 				},
 			},
 			want: want{
-				fieldsEncoded: "{\"foo\":\"bar\",\"buzz\":\"[1 2 3]\"}" + sepText,
+				fieldsEncoded: "foo=bar" + enc.cfg.Separator + "buzz=[1 2 3]" + enc.cfg.Separator,
 			},
 		},
 	}
@@ -81,14 +134,9 @@ func TestEncoderText_SetConfig(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			t.Helper()
 
-			enc := newTestEncoderText()
-			enc.SetConfig(test.args.cfg)
+			enc.Configure(test.args.cfg)
 
-			if encoderCfg := enc.Config(); !reflect.DeepEqual(encoderCfg, test.args.cfg) {
-				t.Errorf("cfg == %v, want %v", encoderCfg, test.args.cfg)
-			}
-
-			if fieldsEncoded := enc.FieldsEnconded(); fieldsEncoded != test.want.fieldsEncoded {
+			if fieldsEncoded := enc.FieldsEncoded(); fieldsEncoded != test.want.fieldsEncoded {
 				t.Errorf("fieldsEncoded == %s, want %s", fieldsEncoded, test.want.fieldsEncoded)
 			}
 		})
@@ -99,10 +147,10 @@ func TestEncoderText_Encode(t *testing.T) { // nolint:funlen,dupl
 	testCases := []testEncodeCase{
 		{
 			args: testEncodeArgs{
-				cfg:      EncoderConfig{},
-				levelStr: debugLevelStr,
-				msg:      "Hello %s",
-				args:     []interface{}{"world"},
+				cfg:   Config{},
+				level: DEBUG,
+				msg:   "Hello %s",
+				args:  []interface{}{"world"},
 			},
 			want: testEncodeWant{
 				lineRegexExpr: fmt.Sprintf(
@@ -113,16 +161,16 @@ func TestEncoderText_Encode(t *testing.T) { // nolint:funlen,dupl
 		},
 		{
 			args: testEncodeArgs{
-				cfg: EncoderConfig{
+				cfg: Config{
 					UTC:       true,
 					Datetime:  true,
 					Timestamp: true,
 					Shortfile: true,
 					Longfile:  true,
 				},
-				levelStr: debugLevelStr,
-				msg:      "Hello %s",
-				args:     []interface{}{"world"},
+				level: DEBUG,
+				msg:   "Hello %s",
+				args:  []interface{}{"world"},
 			},
 			want: testEncodeWant{
 				lineRegexExpr: fmt.Sprintf(
@@ -133,7 +181,7 @@ func TestEncoderText_Encode(t *testing.T) { // nolint:funlen,dupl
 		},
 		{
 			args: testEncodeArgs{
-				cfg: EncoderConfig{
+				cfg: Config{
 					Fields:    []Field{{"foo", "bar"}},
 					UTC:       true,
 					Datetime:  true,
@@ -141,20 +189,20 @@ func TestEncoderText_Encode(t *testing.T) { // nolint:funlen,dupl
 					Shortfile: true,
 					Longfile:  true,
 				},
-				levelStr: debugLevelStr,
-				msg:      "Hello %s",
-				args:     []interface{}{"world"},
+				level: DEBUG,
+				msg:   "Hello %s",
+				args:  []interface{}{"world"},
 			},
 			want: testEncodeWant{
 				lineRegexExpr: fmt.Sprintf(
 					"^%s - %s - %s - %s - %s - %s\n$",
-					datetimeRegex, timestampRegex, levelRegex, fileCallerRegex, fieldsJSONRegex, messageRegex,
+					datetimeRegex, timestampRegex, levelRegex, fileCallerRegex, fieldsTextRegex, messageRegex,
 				),
 			},
 		},
 		{ // print/printf case
 			args: testEncodeArgs{
-				cfg: EncoderConfig{
+				cfg: Config{
 					Fields:    []Field{{"foo", "bar"}},
 					UTC:       true,
 					Datetime:  true,
@@ -162,14 +210,14 @@ func TestEncoderText_Encode(t *testing.T) { // nolint:funlen,dupl
 					Shortfile: true,
 					Longfile:  true,
 				},
-				levelStr: printLevelStr,
-				msg:      "Hello %s",
-				args:     []interface{}{"world"},
+				level: PRINT,
+				msg:   "Hello %s",
+				args:  []interface{}{"world"},
 			},
 			want: testEncodeWant{
 				lineRegexExpr: fmt.Sprintf(
 					"^%s - %s - %s - %s - %s\n$",
-					datetimeRegex, timestampRegex, fileCallerRegex, fieldsJSONRegex, messageRegex,
+					datetimeRegex, timestampRegex, fileCallerRegex, fieldsTextRegex, messageRegex,
 				),
 			},
 		},

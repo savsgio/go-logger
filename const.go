@@ -1,5 +1,7 @@
 package logger
 
+import "time"
+
 // Logger levels.
 const (
 	invalid Level = iota - 1
@@ -22,7 +24,15 @@ const (
 	LstdFlags = Ldatetime
 )
 
+// Logger timestamp formats.
+const (
+	TimestampFormatSeconds TimestampFormat = iota + 1
+	TimestampFormatNanoseconds
+)
+
 const calldepth = 6
+
+const unknownFile = "???"
 
 const (
 	printLevelStr   = ""
@@ -33,3 +43,17 @@ const (
 	infoLevelStr    = "INFO"
 	debugLevelStr   = "DEBUG"
 )
+
+const defaultTextSeparator = " - "
+
+const (
+	defaultJSONFieldKeyDatetime  = "datetime"
+	defaultJSONFieldKeyTimestamp = "timestamp"
+	defaultJSONFieldKeyLevel     = "level"
+	defaultJSONFieldKeyFile      = "file"
+	defaultJSONFieldKeyMessage   = "message"
+)
+
+const defaultDatetimeLayout = time.RFC3339
+
+const defaultTimestampFormat = TimestampFormatSeconds

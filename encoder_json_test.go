@@ -4,30 +4,25 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
-
-	"github.com/valyala/bytebufferpool"
+	"time"
 )
 
 func newTestEncoderJSON() *EncoderJSON {
-	enc := NewEncoderJSON()
-	enc.SetConfig(newTestEncoderConfig())
+	cfg := newTestConfig()
+
+	enc := NewEncoderJSON(EncoderJSONConfig{})
+	enc.Configure(cfg)
 
 	return enc
 }
 
-func Test_NewEncoderJSON(t *testing.T) {
-	if enc := NewEncoderJSON(); enc == nil {
-		t.Error("return nil")
-	}
-}
-
-func TestEncoderJSON_hasBytesSpecialChars(t *testing.T) { // nolint:funlen
+func Test_NewEncoderJSON(t *testing.T) { // nolint:funlen
 	type args struct {
-		value []byte
+		cfg EncoderJSONConfig
 	}
 
 	type want struct {
-		result bool
+		cfg EncoderJSONConfig
 	}
 
 	tests := []struct {
@@ -36,42 +31,48 @@ func TestEncoderJSON_hasBytesSpecialChars(t *testing.T) { // nolint:funlen
 	}{
 		{
 			args: args{
-				value: []byte("some string"),
+				cfg: EncoderJSONConfig{},
 			},
 			want: want{
-				result: false,
+				cfg: EncoderJSONConfig{
+					FieldMap: EnconderJSONFieldMap{
+						DatetimeKey:  defaultJSONFieldKeyDatetime,
+						TimestampKey: defaultJSONFieldKeyTimestamp,
+						LevelKey:     defaultJSONFieldKeyLevel,
+						FileKey:      defaultJSONFieldKeyFile,
+						MessageKey:   defaultJSONFieldKeyMessage,
+					},
+					DatetimeLayout:  defaultDatetimeLayout,
+					TimestampFormat: defaultTimestampFormat,
+				},
 			},
 		},
 		{
 			args: args{
-				value: []byte(`"some" string`),
+				cfg: EncoderJSONConfig{
+					FieldMap: EnconderJSONFieldMap{
+						DatetimeKey:  "@date",
+						TimestampKey: "@time",
+						LevelKey:     "log.level",
+						FileKey:      "caller",
+						MessageKey:   "msg",
+					},
+					DatetimeLayout:  time.RFC1123,
+					TimestampFormat: TimestampFormatNanoseconds,
+				},
 			},
 			want: want{
-				result: true,
-			},
-		},
-		{
-			args: args{
-				value: []byte(`some \string\`),
-			},
-			want: want{
-				result: true,
-			},
-		},
-		{
-			args: args{
-				value: []byte{0x23, 0x56, 0x10, 0x67},
-			},
-			want: want{
-				result: true,
-			},
-		},
-		{
-			args: args{
-				value: []byte{0x23, 0x56, 0x20, 0x67},
-			},
-			want: want{
-				result: false,
+				cfg: EncoderJSONConfig{
+					FieldMap: EnconderJSONFieldMap{
+						DatetimeKey:  "@date",
+						TimestampKey: "@time",
+						LevelKey:     "log.level",
+						FileKey:      "caller",
+						MessageKey:   "msg",
+					},
+					DatetimeLayout:  time.RFC1123,
+					TimestampFormat: TimestampFormatNanoseconds,
+				},
 			},
 		},
 	}
@@ -80,227 +81,13 @@ func TestEncoderJSON_hasBytesSpecialChars(t *testing.T) { // nolint:funlen
 		test := tests[i]
 
 		t.Run("", func(t *testing.T) {
-			enc := newTestEncoderJSON()
-
-			if result := enc.hasBytesSpecialChars(test.args.value); result != test.want.result {
-				t.Errorf("value == '%s', result = %t, want %t", test.args.value, result, test.want.result)
+			enc := NewEncoderJSON(test.args.cfg)
+			if enc == nil {
+				t.Fatal("return nil")
 			}
-		})
-	}
-}
 
-func TestEncoderJSON_writeEscapedBytes(t *testing.T) { // nolint:funlen
-	type args struct {
-		value []byte
-	}
-
-	type want struct {
-		result string
-	}
-
-	tests := []struct {
-		args args
-		want want
-	}{
-		{
-			args: args{
-				value: []byte("some string"),
-			},
-			want: want{
-				result: "some string",
-			},
-		},
-		{
-			args: args{
-				value: []byte(`"some" string`),
-			},
-			want: want{
-				result: `\"some\" string`,
-			},
-		},
-		{
-			args: args{
-				value: []byte(`some: \string\`),
-			},
-			want: want{
-				result: `some: \\string\\`,
-			},
-		},
-	}
-
-	for i := range tests {
-		test := tests[i]
-
-		t.Run("", func(t *testing.T) {
-			enc := newTestEncoderJSON()
-			buf := bytebufferpool.Get()
-
-			enc.writeEscapedBytes(buf, test.args.value)
-
-			if result := buf.String(); result != test.want.result {
-				t.Errorf("value == '%s', result = %s, want %s", test.args.value, result, test.want.result)
-			}
-		})
-	}
-}
-
-func TestEncoderJSON_escape(t *testing.T) { // nolint:funlen
-	type args struct {
-		value []byte
-	}
-
-	type want struct {
-		result string
-	}
-
-	line := "test line"
-
-	tests := []struct {
-		args args
-		want want
-	}{
-		{
-			args: args{
-				value: []byte("some string"),
-			},
-			want: want{
-				result: line + "some string",
-			},
-		},
-		{
-			args: args{
-				value: []byte(`"some" string`),
-			},
-			want: want{
-				result: line + `\"some\" string`,
-			},
-		},
-		{
-			args: args{
-				value: []byte(`some: \string\`),
-			},
-			want: want{
-				result: line + `some: \\string\\`,
-			},
-		},
-	}
-
-	for i := range tests {
-		test := tests[i]
-
-		t.Run("", func(t *testing.T) {
-			enc := newTestEncoderJSON()
-
-			buf := bytebufferpool.Get()
-			buf.WriteString(line)      // nolint:errcheck
-			buf.Write(test.args.value) // nolint:errcheck
-
-			startAt := len(line)
-
-			enc.escape(buf, startAt)
-
-			if result := buf.String(); result != test.want.result {
-				t.Errorf("value == '%s', result = %s, want %s", test.args.value, result, test.want.result)
-			}
-		})
-	}
-}
-
-func TestEncoderJSON_WriteInterface(t *testing.T) {
-	type args struct {
-		value interface{}
-	}
-
-	type want struct {
-		result string
-	}
-
-	tests := []struct {
-		args args
-		want want
-	}{
-		{
-			args: args{
-				value: "hello world",
-			},
-			want: want{
-				result: "hello world",
-			},
-		},
-		{
-			args: args{
-				value: `hello \world"`,
-			},
-			want: want{
-				result: `hello \\world\"`,
-			},
-		},
-	}
-
-	for i := range tests {
-		test := tests[i]
-
-		t.Run("", func(t *testing.T) {
-			enc := newTestEncoderJSON()
-			buf := bytebufferpool.Get()
-
-			enc.WriteInterface(buf, test.args.value)
-
-			if result := buf.String(); result != test.want.result {
-				t.Errorf("value == '%v', result = %s, want %s", test.args.value, result, test.want.result)
-			}
-		})
-	}
-}
-
-func TestEncoderJSON_WriteMessage(t *testing.T) {
-	type args struct {
-		msg  string
-		args []interface{}
-	}
-
-	type want struct {
-		result string
-	}
-
-	tests := []struct {
-		args args
-		want want
-	}{
-		{
-			args: args{
-				msg:  `hello %s`,
-				args: []interface{}{"world"},
-			},
-			want: want{
-				result: "hello world",
-			},
-		},
-		{
-			args: args{
-				msg:  `hello \%s"`,
-				args: []interface{}{"world"},
-			},
-			want: want{
-				result: `hello \\world\"`,
-			},
-		},
-	}
-
-	for i := range tests {
-		test := tests[i]
-
-		t.Run("", func(t *testing.T) {
-			enc := newTestEncoderJSON()
-			buf := bytebufferpool.Get()
-
-			enc.WriteMessage(buf, test.args.msg, test.args.args)
-
-			if result := buf.String(); result != test.want.result {
-				t.Errorf(
-					"msg == '%v' | args == %v, result = %s, want %s",
-					test.args.msg, test.args.args, result, test.want.result,
-				)
+			if !reflect.DeepEqual(enc.cfg, test.want.cfg) {
+				t.Errorf("confg == %v, want %v", enc.cfg, test.want.cfg)
 			}
 		})
 	}
@@ -324,13 +111,13 @@ func TestEncoderJSON_Copy(t *testing.T) {
 	testEncoderBaseCopy(t, &enc.EncoderBase, &copyEnc.EncoderBase)
 }
 
-func TestEncoderJSON_SetConfig(t *testing.T) { // nolint:funlen
+func TestEncoderJSON_keys(t *testing.T) {
 	type args struct {
-		cfg EncoderConfig
+		cfg Config
 	}
 
 	type want struct {
-		fieldsEncoded string
+		result []string
 	}
 
 	tests := []struct {
@@ -339,10 +126,70 @@ func TestEncoderJSON_SetConfig(t *testing.T) { // nolint:funlen
 	}{
 		{
 			args: args{
-				cfg: EncoderConfig{
-					Timestamp: true,
-					Flag:      Ltimestamp,
+				cfg: Config{},
+			},
+			want: want{
+				result: []string{
+					defaultJSONFieldKeyLevel,
+					defaultJSONFieldKeyMessage,
 				},
+			},
+		},
+		{
+			args: args{
+				cfg: Config{
+					Datetime:  true,
+					Timestamp: true,
+					UTC:       true,
+					Shortfile: true,
+					Longfile:  true,
+				},
+			},
+			want: want{
+				result: []string{
+					defaultJSONFieldKeyDatetime,
+					defaultJSONFieldKeyTimestamp,
+					defaultJSONFieldKeyLevel,
+					defaultJSONFieldKeyFile,
+					defaultJSONFieldKeyMessage,
+				},
+			},
+		},
+	}
+
+	enc := newTestEncoderJSON()
+
+	for i := range tests {
+		test := tests[i]
+
+		t.Run("", func(t *testing.T) {
+			result := enc.keys(test.args.cfg)
+
+			if !reflect.DeepEqual(result, test.want.result) {
+				t.Errorf("keys == %v, want %v", result, test.want.result)
+			}
+		})
+	}
+}
+
+func TestEncoderJSON_Configure(t *testing.T) { // nolint:funlen
+	type args struct {
+		cfg Config
+	}
+
+	type want struct {
+		fieldsEncoded string
+	}
+
+	enc := newTestEncoderJSON()
+
+	tests := []struct {
+		args args
+		want want
+	}{
+		{
+			args: args{
+				cfg: Config{},
 			},
 			want: want{
 				fieldsEncoded: "",
@@ -350,26 +197,48 @@ func TestEncoderJSON_SetConfig(t *testing.T) { // nolint:funlen
 		},
 		{
 			args: args{
-				cfg: EncoderConfig{
-					Timestamp: true,
-					Flag:      Ltimestamp,
-					Fields:    []Field{{"foo", "bar"}, {"buzz", []int{1, 2, 3}}},
+				cfg: Config{
+					Fields: []Field{
+						{enc.cfg.FieldMap.DatetimeKey, "hello"}, {"foo", "bar"}, {"buzz", []int{1, 2, 3}},
+					},
+					Datetime: false,
 				},
 			},
 			want: want{
-				fieldsEncoded: `"foo":"bar","buzz":"[1 2 3]",`,
+				fieldsEncoded: `"` + enc.cfg.FieldMap.DatetimeKey + `":"hello","foo":"bar","buzz":"[1 2 3]",`,
 			},
 		},
 		{
 			args: args{
-				cfg: EncoderConfig{
-					Timestamp: true,
-					Flag:      Ltimestamp,
-					Fields:    []Field{{"foo", `id: "123"`}, {"buzz", []int{1, 2, 3}}},
+				cfg: Config{
+					Fields: []Field{
+						{enc.cfg.FieldMap.DatetimeKey, "hello"}, {"foo", "bar"}, {"buzz", []int{1, 2, 3}},
+					},
+					Datetime: true,
+				},
+			},
+			want: want{
+				fieldsEncoded: `"fields.` + enc.cfg.FieldMap.DatetimeKey + `":"hello","foo":"bar","buzz":"[1 2 3]",`,
+			},
+		},
+		{
+			args: args{
+				cfg: Config{
+					Fields: []Field{{"foo", `id: "123"`}, {"buzz", []int{1, 2, 3}}},
 				},
 			},
 			want: want{
 				fieldsEncoded: `"foo":"id: \"123\"","buzz":"[1 2 3]",`,
+			},
+		},
+		{
+			args: args{
+				cfg: Config{
+					Fields: []Field{{`foo"ter"`, `id: "123"`}, {"buzz", []int{1, 2, 3}}},
+				},
+			},
+			want: want{
+				fieldsEncoded: `"foo\"ter\"":"id: \"123\"","buzz":"[1 2 3]",`,
 			},
 		},
 	}
@@ -380,14 +249,9 @@ func TestEncoderJSON_SetConfig(t *testing.T) { // nolint:funlen
 		t.Run("", func(t *testing.T) {
 			t.Helper()
 
-			enc := newTestEncoderJSON()
-			enc.SetConfig(test.args.cfg)
+			enc.Configure(test.args.cfg)
 
-			if encoderCfg := enc.Config(); !reflect.DeepEqual(encoderCfg, test.args.cfg) {
-				t.Errorf("cfg == %v, want %v", encoderCfg, test.args.cfg)
-			}
-
-			if fieldsEncoded := enc.FieldsEnconded(); fieldsEncoded != test.want.fieldsEncoded {
+			if fieldsEncoded := enc.FieldsEncoded(); fieldsEncoded != test.want.fieldsEncoded {
 				t.Errorf("fieldsEncoded == %s, want %s", fieldsEncoded, test.want.fieldsEncoded)
 			}
 		})
@@ -398,10 +262,10 @@ func TestEncoderJSON_Encode(t *testing.T) { // nolint:funlen,dupl
 	testCases := []testEncodeCase{
 		{
 			args: testEncodeArgs{
-				cfg:      EncoderConfig{},
-				levelStr: debugLevelStr,
-				msg:      "Hello %s",
-				args:     []interface{}{"world"},
+				cfg:   Config{},
+				level: DEBUG,
+				msg:   "Hello %s",
+				args:  []interface{}{"world"},
 			},
 			want: testEncodeWant{
 				lineRegexExpr: fmt.Sprintf(
@@ -412,16 +276,16 @@ func TestEncoderJSON_Encode(t *testing.T) { // nolint:funlen,dupl
 		},
 		{
 			args: testEncodeArgs{
-				cfg: EncoderConfig{
+				cfg: Config{
 					UTC:       true,
 					Datetime:  true,
 					Timestamp: true,
 					Shortfile: true,
 					Longfile:  true,
 				},
-				levelStr: debugLevelStr,
-				msg:      "Hello %s",
-				args:     []interface{}{"world"},
+				level: DEBUG,
+				msg:   "Hello %s",
+				args:  []interface{}{"world"},
 			},
 			want: testEncodeWant{
 				lineRegexExpr: fmt.Sprintf(
@@ -432,7 +296,7 @@ func TestEncoderJSON_Encode(t *testing.T) { // nolint:funlen,dupl
 		},
 		{
 			args: testEncodeArgs{
-				cfg: EncoderConfig{
+				cfg: Config{
 					Fields:    []Field{{"foo", "bar"}},
 					UTC:       true,
 					Datetime:  true,
@@ -440,20 +304,20 @@ func TestEncoderJSON_Encode(t *testing.T) { // nolint:funlen,dupl
 					Shortfile: true,
 					Longfile:  true,
 				},
-				levelStr: debugLevelStr,
-				msg:      "Hello %s",
-				args:     []interface{}{"world"},
+				level: DEBUG,
+				msg:   "Hello %s",
+				args:  []interface{}{"world"},
 			},
 			want: testEncodeWant{
 				lineRegexExpr: fmt.Sprintf(
 					`^{"datetime":"%s","timestamp":"%s","level":"%s","file":"%s",%s,"message":"%s"}\n$`,
-					datetimeRegex, timestampRegex, levelRegex, fileCallerRegex, fieldsKVRegex, messageRegex,
+					datetimeRegex, timestampRegex, levelRegex, fileCallerRegex, fieldsJSONRegex, messageRegex,
 				),
 			},
 		},
 		{
 			args: testEncodeArgs{
-				cfg: EncoderConfig{
+				cfg: Config{
 					Fields:    []Field{{"foo", `id: "bar"`}},
 					UTC:       true,
 					Datetime:  true,
@@ -461,20 +325,20 @@ func TestEncoderJSON_Encode(t *testing.T) { // nolint:funlen,dupl
 					Shortfile: true,
 					Longfile:  true,
 				},
-				levelStr: debugLevelStr,
-				msg:      "Hello %s",
-				args:     []interface{}{"world"},
+				level: DEBUG,
+				msg:   "Hello %s",
+				args:  []interface{}{"world"},
 			},
 			want: testEncodeWant{
 				lineRegexExpr: fmt.Sprintf(
 					`^{"datetime":"%s","timestamp":"%s","level":"%s","file":"%s",%s,"message":"%s"}\n$`,
-					datetimeRegex, timestampRegex, levelRegex, fileCallerRegex, fieldsKVRegex, messageRegex,
+					datetimeRegex, timestampRegex, levelRegex, fileCallerRegex, fieldsJSONRegex, messageRegex,
 				),
 			},
 		},
 		{
 			args: testEncodeArgs{
-				cfg: EncoderConfig{
+				cfg: Config{
 					Fields:    []Field{{"foo", "bar"}},
 					UTC:       true,
 					Datetime:  true,
@@ -482,14 +346,14 @@ func TestEncoderJSON_Encode(t *testing.T) { // nolint:funlen,dupl
 					Shortfile: true,
 					Longfile:  true,
 				},
-				levelStr: printLevelStr,
-				msg:      "Hello %s",
-				args:     []interface{}{"world"},
+				level: PRINT,
+				msg:   "Hello %s",
+				args:  []interface{}{"world"},
 			},
 			want: testEncodeWant{
 				lineRegexExpr: fmt.Sprintf(
 					`^{"datetime":"%s","timestamp":"%s","file":"%s",%s,"message":"%s"}\n$`,
-					datetimeRegex, timestampRegex, fileCallerRegex, fieldsKVRegex, messageRegex,
+					datetimeRegex, timestampRegex, fileCallerRegex, fieldsJSONRegex, messageRegex,
 				),
 			},
 		},

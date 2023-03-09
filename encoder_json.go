@@ -1,133 +1,158 @@
 package logger
 
 import (
-	"bytes"
-	"strconv"
-	"time"
-
-	gstrconv "github.com/savsgio/gotils/strconv"
-	"github.com/valyala/bytebufferpool"
+	"github.com/savsgio/gotils/strings"
 )
 
 // NewEncoderJSON creates a new json encoder.
-func NewEncoderJSON() *EncoderJSON {
-	return new(EncoderJSON)
-}
-
-func (enc *EncoderJSON) hasBytesSpecialChars(value []byte) bool {
-	if bytes.IndexByte(value, '"') >= 0 || bytes.IndexByte(value, '\\') >= 0 {
-		return true
+func NewEncoderJSON(cfg EncoderJSONConfig) *EncoderJSON {
+	if cfg.FieldMap.DatetimeKey == "" {
+		cfg.FieldMap.DatetimeKey = defaultJSONFieldKeyDatetime
 	}
 
-	for i := 0; i < len(value); i++ {
-		if value[i] < 0x20 {
-			return true
-		}
+	if cfg.FieldMap.TimestampKey == "" {
+		cfg.FieldMap.TimestampKey = defaultJSONFieldKeyTimestamp
 	}
 
-	return false
-}
-
-func (enc *EncoderJSON) writeEscapedBytes(buf *bytebufferpool.ByteBuffer, b []byte) {
-	str := bytebufferpool.Get()
-	str.Set(b) // NOTE: Use as a copy of b.
-
-	str.B = strconv.AppendQuote(str.B, gstrconv.B2S(str.B))
-
-	buf.Write(str.B[len(b)+1 : str.Len()-1]) // nolint:errcheck
-	bytebufferpool.Put(str)
-}
-
-func (enc *EncoderJSON) escape(buf *bytebufferpool.ByteBuffer, startAt int) {
-	if b := buf.B[startAt:]; enc.hasBytesSpecialChars(b) {
-		buf.Set(buf.B[:startAt])
-		enc.writeEscapedBytes(buf, b)
+	if cfg.FieldMap.LevelKey == "" {
+		cfg.FieldMap.LevelKey = defaultJSONFieldKeyLevel
 	}
+
+	if cfg.FieldMap.FileKey == "" {
+		cfg.FieldMap.FileKey = defaultJSONFieldKeyFile
+	}
+
+	if cfg.FieldMap.MessageKey == "" {
+		cfg.FieldMap.MessageKey = defaultJSONFieldKeyMessage
+	}
+
+	if cfg.DatetimeLayout == "" {
+		cfg.DatetimeLayout = defaultDatetimeLayout
+	}
+
+	if cfg.TimestampFormat == 0 {
+		cfg.TimestampFormat = defaultTimestampFormat
+	}
+
+	enc := new(EncoderJSON)
+	enc.cfg = cfg
+
+	return enc
 }
 
 // Copy returns a copy of the json encoder.
 func (enc *EncoderJSON) Copy() Encoder {
-	copyEnc := NewEncoderJSON()
+	copyEnc := NewEncoderJSON(enc.cfg)
 	copyEnc.EncoderBase = *enc.EncoderBase.Copy()
 
 	return copyEnc
 }
 
-// SetConfig sets the encoder config and encode the fields.
-func (enc *EncoderJSON) SetConfig(cfg EncoderConfig) {
-	enc.EncoderBase.SetConfig(cfg)
+func (enc *EncoderJSON) keys(cfg Config) (keys []string) {
+	if cfg.Datetime {
+		keys = append(keys, enc.cfg.FieldMap.DatetimeKey)
+	}
 
-	buf := bytebufferpool.Get()
+	if cfg.Timestamp {
+		keys = append(keys, enc.cfg.FieldMap.TimestampKey)
+	}
 
-	for _, field := range enc.cfg.Fields {
-		buf.WriteString("\"")      // nolint:errcheck
+	keys = append(keys, enc.cfg.FieldMap.LevelKey)
+
+	if cfg.Shortfile || cfg.Longfile {
+		keys = append(keys, enc.cfg.FieldMap.FileKey)
+	}
+
+	keys = append(keys, enc.cfg.FieldMap.MessageKey)
+
+	return keys
+}
+
+// Configure configures then encoder.
+//
+// - Encondes and sets the fields.
+func (enc *EncoderJSON) Configure(cfg Config) {
+	if len(cfg.Fields) == 0 {
+		enc.SetFieldsEncoded("")
+
+		return
+	}
+
+	buf := AcquireBuffer()
+	keys := enc.keys(cfg)
+
+	for _, field := range cfg.Fields {
+		buf.WriteString("\"") // nolint:errcheck
+
+		if strings.Include(keys, field.Key) {
+			buf.WriteString("fields.") // nolint:errcheck
+		}
+
+		n := buf.Len()
 		buf.WriteString(field.Key) // nolint:errcheck
-		buf.WriteString("\":\"")   // nolint:errcheck
-		enc.WriteInterface(buf, field.Value)
+		buf.Escape(n)
+
+		buf.WriteString("\":\"") // nolint:errcheck
+
+		n = buf.Len()
+		buf.WriteInterface(field.Value)
+		buf.Escape(n)
+
 		buf.WriteString("\",") // nolint:errcheck
 	}
 
-	enc.SetFieldsEnconded(buf.String())
+	enc.SetFieldsEncoded(buf.String())
 
-	bytebufferpool.Put(buf)
+	ReleaseBuffer(buf)
 }
 
-// WriteInterface writes an interface value to the buffer.
-func (enc *EncoderJSON) WriteInterface(buf *bytebufferpool.ByteBuffer, value interface{}) {
-	before := buf.Len()
-
-	enc.EncoderBase.WriteInterface(buf, value)
-	enc.escape(buf, before)
-}
-
-// WriteMessage writes the given message and arguments to the buffer.
-func (enc *EncoderJSON) WriteMessage(buf *bytebufferpool.ByteBuffer, msg string, args []interface{}) {
-	before := buf.Len()
-
-	enc.EncoderBase.WriteMessage(buf, msg, args)
-	enc.escape(buf, before)
-}
-
-// Encode encodes the given level string, message and arguments to the buffer.
-func (enc *EncoderJSON) Encode(buf *bytebufferpool.ByteBuffer, levelStr, msg string, args []interface{}) error {
-	now := time.Now()
-	if enc.cfg.UTC {
-		now = now.UTC()
-	}
-
+// Encode encodes the given entry to the buffer.
+func (enc *EncoderJSON) Encode(buf *Buffer, e Entry) error {
 	buf.WriteByte('{') // nolint:errcheck
 
-	if enc.cfg.Datetime {
-		buf.WriteString("\"datetime\":\"") // nolint:errcheck
-		enc.WriteDatetime(buf, now)
+	if e.Config.Datetime {
+		buf.WriteString("\"")                         // nolint:errcheck
+		buf.WriteString(enc.cfg.FieldMap.DatetimeKey) // nolint:errcheck
+		buf.WriteString("\":\"")                      // nolint:errcheck
+		buf.WriteDatetime(e.Time, enc.cfg.DatetimeLayout)
 		buf.WriteString("\",") // nolint:errcheck
 	}
 
-	if enc.cfg.Timestamp {
-		buf.WriteString("\"timestamp\":\"") // nolint:errcheck
-		enc.WriteTimestamp(buf, now)
+	if e.Config.Timestamp {
+		buf.WriteString("\"")                          // nolint:errcheck
+		buf.WriteString(enc.cfg.FieldMap.TimestampKey) // nolint:errcheck
+		buf.WriteString("\":\"")                       // nolint:errcheck
+		buf.WriteTimestamp(e.Time, enc.cfg.TimestampFormat)
 		buf.WriteString("\",") // nolint:errcheck
 	}
 
-	if levelStr != "" {
-		buf.WriteString("\"level\":\"") // nolint:errcheck
-		buf.WriteString(levelStr)       // nolint:errcheck
-		buf.WriteString("\",")          // nolint:errcheck
+	if levelStr := e.Level.String(); levelStr != "" {
+		buf.WriteString("\"")                      // nolint:errcheck
+		buf.WriteString(enc.cfg.FieldMap.LevelKey) // nolint:errcheck
+		buf.WriteString("\":\"")                   // nolint:errcheck
+		buf.WriteString(levelStr)                  // nolint:errcheck
+		buf.WriteString("\",")                     // nolint:errcheck
 	}
 
-	if enc.cfg.Shortfile || enc.cfg.Longfile {
-		buf.WriteString("\"file\":\"") // nolint:errcheck
-		enc.WriteFileCaller(buf)
+	if e.Config.Shortfile || e.Config.Longfile {
+		buf.WriteString("\"")                     // nolint:errcheck
+		buf.WriteString(enc.cfg.FieldMap.FileKey) // nolint:errcheck
+		buf.WriteString("\":\"")                  // nolint:errcheck
+		buf.WriteFileCaller(e.Caller, e.Config.Shortfile)
 		buf.WriteString("\",") // nolint:errcheck
 	}
 
-	enc.WriteFieldsEnconded(buf)
+	buf.WriteString(enc.FieldsEncoded())         // nolint:errcheck
+	buf.WriteString("\"")                        // nolint:errcheck
+	buf.WriteString(enc.cfg.FieldMap.MessageKey) // nolint:errcheck
+	buf.WriteString("\":\"")                     // nolint:errcheck
 
-	buf.WriteString("\"message\":\"") // nolint:errcheck
-	enc.WriteMessage(buf, msg, args)
+	n := buf.Len()
+	buf.WriteString(e.Message) // nolint:errcheck
+	buf.Escape(n)
+
 	buf.WriteString("\"}") // nolint:errcheck
-
-	enc.WriteNewLine(buf)
+	buf.WriteNewLine()
 
 	return nil
 }

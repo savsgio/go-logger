@@ -3,8 +3,7 @@ package logger
 import (
 	"io"
 	"os"
-
-	"github.com/valyala/bytebufferpool"
+	"time"
 )
 
 func newEncodeOutputFunc(l *Logger) encodeOutputFunc {
@@ -12,12 +11,33 @@ func newEncodeOutputFunc(l *Logger) encodeOutputFunc {
 		l.mu.RLock()
 
 		if l.isLevelEnabled(level) {
-			buf := bytebufferpool.Get()
+			buf := AcquireBuffer()
 
-			l.encoder.Encode(buf, level.String(), msg, args) // nolint:errcheck
-			l.output.Write(buf.Bytes())                      // nolint:errcheck
+			e := Entry{
+				Config:  l.cfg,
+				Level:   level,
+				Message: buf.formatMessage(msg, args),
+			}
+			e.Caller.File = unknownFile
+			e.Caller.Line = 0
 
-			bytebufferpool.Put(buf)
+			if l.cfg.Datetime || l.cfg.Timestamp {
+				e.Time = time.Now()
+
+				if l.cfg.UTC {
+					e.Time = e.Time.UTC()
+				}
+			}
+
+			if l.cfg.Shortfile || l.cfg.Longfile {
+				e.Caller = getFileCaller(l.cfg.calldepth)
+			}
+
+			l.encoder.Encode(buf, e)    // nolint:errcheck
+			l.output.Write(buf.Bytes()) // nolint:errcheck
+			l.hooks.fire(e)
+
+			ReleaseBuffer(buf)
 		}
 
 		l.mu.RUnlock()
@@ -26,19 +46,17 @@ func newEncodeOutputFunc(l *Logger) encodeOutputFunc {
 
 // New creates a new Logger.
 func New(level Level, output io.Writer, fields ...Field) *Logger {
-	cfg := EncoderConfig{
+	l := new(Logger)
+	l.cfg = Config{
 		calldepth: calldepth,
 	}
-
-	enc := NewEncoderText()
-	enc.SetConfig(cfg)
-
-	l := new(Logger)
-	l.cfg = cfg
 	l.level = level
 	l.output = output
-	l.encoder = enc
+	l.encoder = NewEncoderText(EncoderTextConfig{
+		Separator: defaultTextSeparator,
+	})
 	l.encodeOutput = newEncodeOutputFunc(l)
+	l.hooks = newLevelHooks()
 	l.exit = os.Exit
 
 	l.SetFields(fields...)
@@ -61,7 +79,6 @@ func (l *Logger) getField(key string) *Field {
 
 func (l *Logger) setCalldepth(value int) {
 	l.cfg.calldepth = value
-	l.encoder.SetConfig(l.cfg)
 }
 
 func (l *Logger) setFields(fields ...Field) {
@@ -73,20 +90,21 @@ func (l *Logger) setFields(fields ...Field) {
 		}
 	}
 
-	l.encoder.SetConfig(l.cfg)
+	l.encoder.Configure(l.cfg)
 }
 
 func (l *Logger) isLevelEnabled(level Level) bool {
 	return l.level >= level
 }
 
-func (l *Logger) clone() *Logger {
+func (l *Logger) copy() *Logger {
 	l2 := new(Logger)
 	l2.cfg = l.cfg.Copy()
 	l2.level = l.level
 	l2.output = l.output
 	l2.encoder = l.encoder.Copy()
 	l2.encodeOutput = newEncodeOutputFunc(l2)
+	l2.hooks = l.hooks.copy()
 	l2.exit = l.exit
 
 	return l2
@@ -96,7 +114,7 @@ func (l *Logger) clone() *Logger {
 func (l *Logger) WithFields(fields ...Field) *Logger {
 	l.mu.RLock()
 
-	l2 := l.clone()
+	l2 := l.copy()
 	l2.setFields(fields...)
 
 	l.mu.RUnlock()
@@ -115,14 +133,12 @@ func (l *Logger) SetFields(fields ...Field) {
 func (l *Logger) SetFlags(flag Flag) {
 	l.mu.Lock()
 
-	l.cfg.Flag = flag
 	l.cfg.Datetime = flag&Ldatetime != 0
 	l.cfg.Timestamp = flag&Ltimestamp != 0
 	l.cfg.UTC = flag&LUTC != 0
 	l.cfg.Shortfile = flag&Lshortfile != 0
 	l.cfg.Longfile = flag&Llongfile != 0
-
-	l.encoder.SetConfig(l.cfg)
+	l.cfg.flag = flag
 
 	l.mu.Unlock()
 }
@@ -145,7 +161,7 @@ func (l *Logger) SetOutput(output io.Writer) {
 func (l *Logger) SetEncoder(enc Encoder) {
 	l.mu.Lock()
 	l.encoder = enc
-	l.encoder.SetConfig(l.cfg)
+	l.encoder.Configure(l.cfg)
 	l.mu.Unlock()
 }
 
@@ -156,6 +172,11 @@ func (l *Logger) IsLevelEnabled(level Level) bool {
 	l.mu.RUnlock()
 
 	return enabled
+}
+
+// AddHook registers the given hook to the logger.
+func (l *Logger) AddHook(h Hook) error {
+	return l.hooks.add(h)
 }
 
 func (l *Logger) Print(msg ...interface{}) {

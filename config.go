@@ -1,7 +1,8 @@
 package logger
 
-func (e *EncoderConfig) Copy() EncoderConfig {
-	e2 := *e
+// Copy returns a copy of the config.
+func (e Config) Copy() Config {
+	e2 := e
 
 	if e.Fields != nil {
 		e2.Fields = make([]Field, len(e.Fields))

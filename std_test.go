@@ -42,7 +42,6 @@ func TestLogger_std_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    PRINT,
-				levelStr: printLevelStr,
 				exitCode: -1,
 			},
 		},
@@ -54,7 +53,6 @@ func TestLogger_std_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    TRACE,
-				levelStr: traceLevelStr,
 				exitCode: -1,
 			},
 		},
@@ -66,7 +64,6 @@ func TestLogger_std_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    FATAL,
-				levelStr: fatalLevelStr,
 				exitCode: 1,
 			},
 		},
@@ -78,7 +75,6 @@ func TestLogger_std_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    ERROR,
-				levelStr: errorLevelStr,
 				exitCode: -1,
 			},
 		},
@@ -90,7 +86,6 @@ func TestLogger_std_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    WARNING,
-				levelStr: warningLevelStr,
 				exitCode: -1,
 			},
 		},
@@ -102,7 +97,6 @@ func TestLogger_std_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    INFO,
-				levelStr: infoLevelStr,
 				exitCode: -1,
 			},
 		},
@@ -114,7 +108,6 @@ func TestLogger_std_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    DEBUG,
-				levelStr: debugLevelStr,
 				exitCode: -1,
 			},
 		},
