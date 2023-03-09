@@ -59,7 +59,7 @@ func Test_newEncodeOutputFunc(t *testing.T) { // nolint:funlen
 	var wantResult string
 
 	enc := new(mockEncoder)
-	enc.setFields = func(f []Field) {}
+	enc.configure = func(cfg Config) {}
 	enc.encode = func(buf *Buffer, e Entry) error {
 		t.Helper()
 
@@ -203,7 +203,7 @@ func TestLogger_getField(t *testing.T) {
 	field := Field{Key: "key", Value: "value"}
 
 	l := newTestLogger()
-	l.setFields(field)
+	l.SetFields(field)
 
 	result := l.getField(field.Key)
 
@@ -578,7 +578,7 @@ func TestLogger_SetOutput(t *testing.T) {
 func testLoggerSetEncoder(t *testing.T, l *Logger, setEncoderFunc func(enc Encoder)) {
 	t.Helper()
 
-	encoder := NewEncoderJSON()
+	encoder := newTestEncoderJSON()
 
 	setEncoderFunc(encoder)
 
@@ -840,7 +840,7 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 
 func BenchmarkLogger_Levels(b *testing.B) { // nolint:funlen
 	l := newTestLogger()
-	l.SetEncoder(NewEncoderJSON())
+	l.SetEncoder(newTestEncoderJSON())
 	// l.SetFlags(Ltimestamp)
 	l.SetFields(Field{Key: "hola", Value: 1}, Field{Key: "adios", Value: 2})
 	l.SetLevel(DEBUG)

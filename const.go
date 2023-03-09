@@ -35,3 +35,13 @@ const (
 	infoLevelStr    = "INFO"
 	debugLevelStr   = "DEBUG"
 )
+
+const defaultTextSeparator = " - "
+
+const (
+	defaultJSONFieldKeyDatetime  = "datetime"
+	defaultJSONFieldKeyTimestamp = "timestamp"
+	defaultJSONFieldKeyLevel     = "level"
+	defaultJSONFieldKeyFile      = "file"
+	defaultJSONFieldKeyMessage   = "message"
+)

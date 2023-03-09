@@ -88,7 +88,7 @@ type Encoder interface {
 	Copy() Encoder
 	FieldsEncoded() string
 	SetFieldsEncoded(fieldsEncoded string)
-	SetFields(fields []Field)
+	Configure(cfg Config)
 	Encode(*Buffer, Entry) error
 }
 
@@ -97,12 +97,45 @@ type EncoderBase struct {
 	fieldsEncoded string
 }
 
+// EncoderTextConfig is the configuration of text encoder.
+type EncoderTextConfig struct {
+	// Default: -
+	Separator string
+}
+
 // EncoderText is the text enconder.
 type EncoderText struct {
 	EncoderBase
+
+	cfg EncoderTextConfig
 }
 
 // EncoderJSON is the json encoder.
 type EncoderJSON struct {
 	EncoderBase
+
+	cfg EncoderJSONConfig
+}
+
+// EncoderJSONConfig is the configuration of json encoder.
+type EncoderJSONConfig struct {
+	FieldMap EnconderJSONFieldMap
+}
+
+// EnconderJSONFieldMap defines name of keys.
+type EnconderJSONFieldMap struct {
+	// Default: datetime
+	DatetimeKey string
+
+	// Default: timestamp
+	TimestampKey string
+
+	// Default: level
+	LevelKey string
+
+	// Default: file
+	FileKey string
+
+	// Default: message
+	MessageKey string
 }

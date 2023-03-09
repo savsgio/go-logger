@@ -13,8 +13,8 @@ const (
 	timestampRegex  = `(\d+)`
 	levelRegex      = `([A-Z]+)`
 	fileCallerRegex = `((.*)\.go\:\d+)`
-	fieldsKVRegex   = `((\"(.*)\"\:\"(.*)\"\.?)+)`
-	fieldsJSONRegex = `(\{` + fieldsKVRegex + `\})`
+	fieldsTextRegex = `(((.*)=(.*))+)`
+	fieldsJSONRegex = `((\"(fields\.)?(.*)\"\:\"(.*)\")+)`
 	messageRegex    = `(.*)`
 )
 
@@ -38,7 +38,7 @@ type mockEncoder struct {
 	copy             func() Encoder
 	fieldsEncoded    func() string
 	setFieldsEncoded func(string)
-	setFields        func([]Field)
+	configure        func(Config)
 	encode           func(*Buffer, Entry) error
 }
 
@@ -54,8 +54,8 @@ func (enc *mockEncoder) SetFieldsEncoded(fieldsEncoded string) {
 	enc.setFieldsEncoded(fieldsEncoded)
 }
 
-func (enc *mockEncoder) SetFields(fields []Field) {
-	enc.setFields(fields)
+func (enc *mockEncoder) Configure(cfg Config) {
+	enc.configure(cfg)
 }
 
 func (enc *mockEncoder) Encode(buf *Buffer, e Entry) error {
@@ -85,7 +85,7 @@ func testEncoderEncode(t *testing.T, enc Encoder, testCases []testEncodeCase) {
 			buf := AcquireBuffer()
 			defer ReleaseBuffer(buf)
 
-			enc.SetFields(cfg.Fields)
+			enc.Configure(cfg)
 
 			e := Entry{
 				Config:  cfg,
@@ -124,7 +124,7 @@ func benchmarkEncoderEncode(b *testing.B, enc Encoder) {
 		Message: `failed to request: jojoj""""`,
 	}
 
-	enc.SetFields(e.Config.Fields)
+	enc.Configure(e.Config)
 
 	b.ResetTimer()
 

@@ -1,28 +1,90 @@
 package logger
 
+import "github.com/savsgio/gotils/strings"
+
 // NewEncoderJSON creates a new json encoder.
-func NewEncoderJSON() *EncoderJSON {
-	return new(EncoderJSON)
+func NewEncoderJSON(cfg EncoderJSONConfig) *EncoderJSON {
+	if cfg.FieldMap.DatetimeKey == "" {
+		cfg.FieldMap.DatetimeKey = defaultJSONFieldKeyDatetime
+	}
+
+	if cfg.FieldMap.TimestampKey == "" {
+		cfg.FieldMap.TimestampKey = defaultJSONFieldKeyTimestamp
+	}
+
+	if cfg.FieldMap.LevelKey == "" {
+		cfg.FieldMap.LevelKey = defaultJSONFieldKeyLevel
+	}
+
+	if cfg.FieldMap.FileKey == "" {
+		cfg.FieldMap.FileKey = defaultJSONFieldKeyFile
+	}
+
+	if cfg.FieldMap.MessageKey == "" {
+		cfg.FieldMap.MessageKey = defaultJSONFieldKeyMessage
+	}
+
+	enc := new(EncoderJSON)
+	enc.cfg = cfg
+
+	return enc
 }
 
 // Copy returns a copy of the json encoder.
 func (enc *EncoderJSON) Copy() Encoder {
-	copyEnc := NewEncoderJSON()
+	copyEnc := NewEncoderJSON(enc.cfg)
 	copyEnc.EncoderBase = *enc.EncoderBase.Copy()
 
 	return copyEnc
 }
 
-// SetFields encodes and sets the given fields.
-func (enc *EncoderJSON) SetFields(fields []Field) {
-	buf := AcquireBuffer()
+func (enc *EncoderJSON) keys(cfg Config) (keys []string) {
+	if cfg.Datetime {
+		keys = append(keys, enc.cfg.FieldMap.DatetimeKey)
+	}
 
-	for _, field := range fields {
-		buf.WriteString("\"")      // nolint:errcheck
-		buf.WriteString(field.Key) // nolint:errcheck
-		buf.WriteString("\":\"")   // nolint:errcheck
+	if cfg.Timestamp {
+		keys = append(keys, enc.cfg.FieldMap.TimestampKey)
+	}
+
+	keys = append(keys, enc.cfg.FieldMap.LevelKey)
+
+	if cfg.Shortfile || cfg.Longfile {
+		keys = append(keys, enc.cfg.FieldMap.FileKey)
+	}
+
+	keys = append(keys, enc.cfg.FieldMap.MessageKey)
+
+	return keys
+}
+
+// Configure configures then encoder.
+//
+// - Encondes and sets the fields.
+func (enc *EncoderJSON) Configure(cfg Config) {
+	if len(cfg.Fields) == 0 {
+		enc.SetFieldsEncoded("")
+
+		return
+	}
+
+	buf := AcquireBuffer()
+	keys := enc.keys(cfg)
+
+	for _, field := range cfg.Fields {
+		buf.WriteString("\"") // nolint:errcheck
+
+		if strings.Include(keys, field.Key) {
+			buf.WriteString("fields.") // nolint:errcheck
+		}
 
 		n := buf.Len()
+		buf.WriteString(field.Key) // nolint:errcheck
+		buf.Escape(n)
+
+		buf.WriteString("\":\"") // nolint:errcheck
+
+		n = buf.Len()
 		buf.WriteInterface(field.Value)
 		buf.Escape(n)
 
@@ -39,31 +101,41 @@ func (enc *EncoderJSON) Encode(buf *Buffer, e Entry) error {
 	buf.WriteByte('{') // nolint:errcheck
 
 	if e.Config.Datetime {
-		buf.WriteString("\"datetime\":\"") // nolint:errcheck
+		buf.WriteString("\"")                         // nolint:errcheck
+		buf.WriteString(enc.cfg.FieldMap.DatetimeKey) // nolint:errcheck
+		buf.WriteString("\":\"")                      // nolint:errcheck
 		buf.WriteDatetime(e.Time)
 		buf.WriteString("\",") // nolint:errcheck
 	}
 
 	if e.Config.Timestamp {
-		buf.WriteString("\"timestamp\":\"") // nolint:errcheck
+		buf.WriteString("\"")                          // nolint:errcheck
+		buf.WriteString(enc.cfg.FieldMap.TimestampKey) // nolint:errcheck
+		buf.WriteString("\":\"")                       // nolint:errcheck
 		buf.WriteTimestamp(e.Time)
 		buf.WriteString("\",") // nolint:errcheck
 	}
 
 	if levelStr := e.Level.String(); levelStr != "" {
-		buf.WriteString("\"level\":\"") // nolint:errcheck
-		buf.WriteString(levelStr)       // nolint:errcheck
-		buf.WriteString("\",")          // nolint:errcheck
+		buf.WriteString("\"")                      // nolint:errcheck
+		buf.WriteString(enc.cfg.FieldMap.LevelKey) // nolint:errcheck
+		buf.WriteString("\":\"")                   // nolint:errcheck
+		buf.WriteString(levelStr)                  // nolint:errcheck
+		buf.WriteString("\",")                     // nolint:errcheck
 	}
 
 	if e.Config.Shortfile || e.Config.Longfile {
-		buf.WriteString("\"file\":\"") // nolint:errcheck
+		buf.WriteString("\"")                     // nolint:errcheck
+		buf.WriteString(enc.cfg.FieldMap.FileKey) // nolint:errcheck
+		buf.WriteString("\":\"")                  // nolint:errcheck
 		buf.WriteFileCaller(e.Caller, e.Config.Shortfile)
 		buf.WriteString("\",") // nolint:errcheck
 	}
 
-	buf.WriteString(enc.FieldsEncoded()) // nolint:errcheck
-	buf.WriteString("\"message\":\"")    // nolint:errcheck
+	buf.WriteString(enc.FieldsEncoded())         // nolint:errcheck
+	buf.WriteString("\"")                        // nolint:errcheck
+	buf.WriteString(enc.cfg.FieldMap.MessageKey) // nolint:errcheck
+	buf.WriteString("\":\"")                     // nolint:errcheck
 
 	n := buf.Len()
 	buf.WriteString(e.Message) // nolint:errcheck

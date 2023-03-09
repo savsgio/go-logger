@@ -9,15 +9,62 @@ import (
 func newTestEncoderText() *EncoderText {
 	cfg := newTestConfig()
 
-	enc := NewEncoderText()
-	enc.SetFields(cfg.Fields)
+	enc := NewEncoderText(EncoderTextConfig{})
+	enc.Configure(cfg)
 
 	return enc
 }
 
 func Test_NewEncoderText(t *testing.T) {
-	if enc := NewEncoderText(); enc == nil {
-		t.Error("return nil")
+	type args struct {
+		cfg EncoderTextConfig
+	}
+
+	type want struct {
+		cfg EncoderTextConfig
+	}
+
+	tests := []struct {
+		args args
+		want want
+	}{
+		{
+			args: args{
+				cfg: EncoderTextConfig{},
+			},
+			want: want{
+				cfg: EncoderTextConfig{
+					Separator: defaultTextSeparator,
+				},
+			},
+		},
+		{
+			args: args{
+				cfg: EncoderTextConfig{
+					Separator: "#",
+				},
+			},
+			want: want{
+				cfg: EncoderTextConfig{
+					Separator: "#",
+				},
+			},
+		},
+	}
+
+	for i := range tests {
+		test := tests[i]
+
+		t.Run("", func(t *testing.T) {
+			enc := NewEncoderText(test.args.cfg)
+			if enc == nil {
+				t.Fatal("return nil")
+			}
+
+			if !reflect.DeepEqual(enc.cfg, test.want.cfg) {
+				t.Errorf("confg == %v, want %v", enc.cfg, test.want.cfg)
+			}
+		})
 	}
 }
 
@@ -39,14 +86,16 @@ func TestEncoderText_Copy(t *testing.T) {
 	testEncoderBaseCopy(t, &enc.EncoderBase, &copyEnc.EncoderBase)
 }
 
-func TestEncoderText_SetFields(t *testing.T) {
+func TestEncoderText_Configure(t *testing.T) {
 	type args struct {
-		fields []Field
+		cfg Config
 	}
 
 	type want struct {
 		fieldsEncoded string
 	}
+
+	enc := newTestEncoderText()
 
 	tests := []struct {
 		args args
@@ -54,7 +103,7 @@ func TestEncoderText_SetFields(t *testing.T) {
 	}{
 		{
 			args: args{
-				fields: []Field{},
+				cfg: Config{},
 			},
 			want: want{
 				fieldsEncoded: "",
@@ -62,10 +111,12 @@ func TestEncoderText_SetFields(t *testing.T) {
 		},
 		{
 			args: args{
-				fields: []Field{{"foo", "bar"}, {"buzz", []int{1, 2, 3}}},
+				cfg: Config{
+					Fields: []Field{{"foo", "bar"}, {"buzz", []int{1, 2, 3}}},
+				},
 			},
 			want: want{
-				fieldsEncoded: "{\"foo\":\"bar\",\"buzz\":\"[1 2 3]\"}" + sepText,
+				fieldsEncoded: "foo=bar" + enc.cfg.Separator + "buzz=[1 2 3]" + enc.cfg.Separator,
 			},
 		},
 	}
@@ -76,8 +127,7 @@ func TestEncoderText_SetFields(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			t.Helper()
 
-			enc := newTestEncoderText()
-			enc.SetFields(test.args.fields)
+			enc.Configure(test.args.cfg)
 
 			if fieldsEncoded := enc.FieldsEncoded(); fieldsEncoded != test.want.fieldsEncoded {
 				t.Errorf("fieldsEncoded == %s, want %s", fieldsEncoded, test.want.fieldsEncoded)
@@ -139,7 +189,7 @@ func TestEncoderText_Encode(t *testing.T) { // nolint:funlen,dupl
 			want: testEncodeWant{
 				lineRegexExpr: fmt.Sprintf(
 					"^%s - %s - %s - %s - %s - %s\n$",
-					datetimeRegex, timestampRegex, levelRegex, fileCallerRegex, fieldsJSONRegex, messageRegex,
+					datetimeRegex, timestampRegex, levelRegex, fileCallerRegex, fieldsTextRegex, messageRegex,
 				),
 			},
 		},
@@ -160,7 +210,7 @@ func TestEncoderText_Encode(t *testing.T) { // nolint:funlen,dupl
 			want: testEncodeWant{
 				lineRegexExpr: fmt.Sprintf(
 					"^%s - %s - %s - %s - %s\n$",
-					datetimeRegex, timestampRegex, fileCallerRegex, fieldsJSONRegex, messageRegex,
+					datetimeRegex, timestampRegex, fileCallerRegex, fieldsTextRegex, messageRegex,
 				),
 			},
 		},

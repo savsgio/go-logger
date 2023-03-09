@@ -52,7 +52,9 @@ func New(level Level, output io.Writer, fields ...Field) *Logger {
 	}
 	l.level = level
 	l.output = output
-	l.encoder = NewEncoderText()
+	l.encoder = NewEncoderText(EncoderTextConfig{
+		Separator: defaultTextSeparator,
+	})
 	l.encodeOutput = newEncodeOutputFunc(l)
 	l.hooks = newLevelHooks()
 	l.exit = os.Exit
@@ -88,7 +90,7 @@ func (l *Logger) setFields(fields ...Field) {
 		}
 	}
 
-	l.encoder.SetFields(l.cfg.Fields)
+	l.encoder.Configure(l.cfg)
 }
 
 func (l *Logger) isLevelEnabled(level Level) bool {
@@ -159,7 +161,7 @@ func (l *Logger) SetOutput(output io.Writer) {
 func (l *Logger) SetEncoder(enc Encoder) {
 	l.mu.Lock()
 	l.encoder = enc
-	l.encoder.SetFields(l.cfg.Fields)
+	l.encoder.Configure(l.cfg)
 	l.mu.Unlock()
 }
 
