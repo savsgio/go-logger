@@ -132,9 +132,9 @@ func (b *Buffer) WriteTo(w io.Writer) (int64, error) {
 	return b.b1.WriteTo(w) // nolint:wrapcheck
 }
 
-// WriteDatetime writes the given time to the buffer in RFC3339 format.
-func (b *Buffer) WriteDatetime(now time.Time) {
-	b.b1.B = now.AppendFormat(b.b1.B, time.RFC3339)
+// WriteDatetime writes the given time to the buffer formatted with the given layout.
+func (b *Buffer) WriteDatetime(now time.Time, layout string) {
+	b.b1.B = now.AppendFormat(b.b1.B, layout)
 }
 
 // WriteTimestamp writes the timestamp to the buffer from the given time.

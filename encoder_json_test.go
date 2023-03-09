@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func newTestEncoderJSON() *EncoderJSON {
@@ -41,6 +42,7 @@ func Test_NewEncoderJSON(t *testing.T) { // nolint:funlen
 						FileKey:      defaultJSONFieldKeyFile,
 						MessageKey:   defaultJSONFieldKeyMessage,
 					},
+					DatetimeLayout: defaultDatetimeLayout,
 				},
 			},
 		},
@@ -54,6 +56,7 @@ func Test_NewEncoderJSON(t *testing.T) { // nolint:funlen
 						FileKey:      "caller",
 						MessageKey:   "msg",
 					},
+					DatetimeLayout: time.RFC1123,
 				},
 			},
 			want: want{
@@ -65,6 +68,7 @@ func Test_NewEncoderJSON(t *testing.T) { // nolint:funlen
 						FileKey:      "caller",
 						MessageKey:   "msg",
 					},
+					DatetimeLayout: time.RFC1123,
 				},
 			},
 		},

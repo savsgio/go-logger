@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func newTestEncoderText() *EncoderText {
@@ -34,19 +35,22 @@ func Test_NewEncoderText(t *testing.T) {
 			},
 			want: want{
 				cfg: EncoderTextConfig{
-					Separator: defaultTextSeparator,
+					Separator:      defaultTextSeparator,
+					DatetimeLayout: defaultDatetimeLayout,
 				},
 			},
 		},
 		{
 			args: args{
 				cfg: EncoderTextConfig{
-					Separator: "#",
+					Separator:      "#",
+					DatetimeLayout: time.RFC1123,
 				},
 			},
 			want: want{
 				cfg: EncoderTextConfig{
-					Separator: "#",
+					Separator:      "#",
+					DatetimeLayout: time.RFC1123,
 				},
 			},
 		},

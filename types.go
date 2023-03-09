@@ -101,6 +101,9 @@ type EncoderBase struct {
 type EncoderTextConfig struct {
 	// Default: -
 	Separator string
+
+	// Default: time.RFC3339
+	DatetimeLayout string
 }
 
 // EncoderText is the text enconder.
@@ -120,6 +123,9 @@ type EncoderJSON struct {
 // EncoderJSONConfig is the configuration of json encoder.
 type EncoderJSONConfig struct {
 	FieldMap EnconderJSONFieldMap
+
+	// Default: time.RFC3339
+	DatetimeLayout string
 }
 
 // EnconderJSONFieldMap defines name of keys.

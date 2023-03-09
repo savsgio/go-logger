@@ -1,6 +1,8 @@
 package logger
 
-import "github.com/savsgio/gotils/strings"
+import (
+	"github.com/savsgio/gotils/strings"
+)
 
 // NewEncoderJSON creates a new json encoder.
 func NewEncoderJSON(cfg EncoderJSONConfig) *EncoderJSON {
@@ -22,6 +24,10 @@ func NewEncoderJSON(cfg EncoderJSONConfig) *EncoderJSON {
 
 	if cfg.FieldMap.MessageKey == "" {
 		cfg.FieldMap.MessageKey = defaultJSONFieldKeyMessage
+	}
+
+	if cfg.DatetimeLayout == "" {
+		cfg.DatetimeLayout = defaultDatetimeLayout
 	}
 
 	enc := new(EncoderJSON)
@@ -104,7 +110,7 @@ func (enc *EncoderJSON) Encode(buf *Buffer, e Entry) error {
 		buf.WriteString("\"")                         // nolint:errcheck
 		buf.WriteString(enc.cfg.FieldMap.DatetimeKey) // nolint:errcheck
 		buf.WriteString("\":\"")                      // nolint:errcheck
-		buf.WriteDatetime(e.Time)
+		buf.WriteDatetime(e.Time, enc.cfg.DatetimeLayout)
 		buf.WriteString("\",") // nolint:errcheck
 	}
 

@@ -6,6 +6,10 @@ func NewEncoderText(cfg EncoderTextConfig) *EncoderText {
 		cfg.Separator = defaultTextSeparator
 	}
 
+	if cfg.DatetimeLayout == "" {
+		cfg.DatetimeLayout = defaultDatetimeLayout
+	}
+
 	enc := new(EncoderText)
 	enc.cfg = cfg
 
@@ -47,7 +51,7 @@ func (enc *EncoderText) Configure(cfg Config) {
 // Encode encodes the given entry to the buffer.
 func (enc *EncoderText) Encode(buf *Buffer, e Entry) error {
 	if e.Config.Datetime {
-		buf.WriteDatetime(e.Time)
+		buf.WriteDatetime(e.Time, enc.cfg.DatetimeLayout)
 		buf.WriteString(enc.cfg.Separator) // nolint:errcheck
 	}
 

@@ -1,5 +1,7 @@
 package logger
 
+import "time"
+
 // Logger levels.
 const (
 	invalid Level = iota - 1
@@ -45,3 +47,5 @@ const (
 	defaultJSONFieldKeyFile      = "file"
 	defaultJSONFieldKeyMessage   = "message"
 )
+
+const defaultDatetimeLayout = time.RFC3339

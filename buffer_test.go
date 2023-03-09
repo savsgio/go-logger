@@ -366,10 +366,11 @@ func TestBuffer_WriteTo(t *testing.T) {
 func TestBuffer_WriteDatetime(t *testing.T) {
 	buf := NewBuffer()
 	now := time.Now()
+	layout := defaultDatetimeLayout
 
-	buf.WriteDatetime(now)
+	buf.WriteDatetime(now, layout)
 
-	wantDatetime := now.Format(time.RFC3339)
+	wantDatetime := now.Format(layout)
 
 	if datetime := buf.String(); datetime != wantDatetime {
 		t.Errorf("datetime == %s, want %s", datetime, wantDatetime)
