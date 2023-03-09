@@ -30,6 +30,10 @@ func NewEncoderJSON(cfg EncoderJSONConfig) *EncoderJSON {
 		cfg.DatetimeLayout = defaultDatetimeLayout
 	}
 
+	if cfg.TimestampFormat == 0 {
+		cfg.TimestampFormat = defaultTimestampFormat
+	}
+
 	enc := new(EncoderJSON)
 	enc.cfg = cfg
 
@@ -118,7 +122,7 @@ func (enc *EncoderJSON) Encode(buf *Buffer, e Entry) error {
 		buf.WriteString("\"")                          // nolint:errcheck
 		buf.WriteString(enc.cfg.FieldMap.TimestampKey) // nolint:errcheck
 		buf.WriteString("\":\"")                       // nolint:errcheck
-		buf.WriteTimestamp(e.Time)
+		buf.WriteTimestamp(e.Time, enc.cfg.TimestampFormat)
 		buf.WriteString("\",") // nolint:errcheck
 	}
 

@@ -138,8 +138,13 @@ func (b *Buffer) WriteDatetime(now time.Time, layout string) {
 }
 
 // WriteTimestamp writes the timestamp to the buffer from the given time.
-func (b *Buffer) WriteTimestamp(now time.Time) {
-	b.b1.B = strconv.AppendInt(b.b1.B, now.Unix(), 10)
+func (b *Buffer) WriteTimestamp(now time.Time, format TimestampFormat) {
+	fn := now.Unix
+	if format == TimestampFormatNanoseconds {
+		fn = now.UnixNano
+	}
+
+	b.b1.B = strconv.AppendInt(b.b1.B, fn(), 10)
 }
 
 // WriteFileCaller writes the file caller to the buffer.

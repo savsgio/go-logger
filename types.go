@@ -36,6 +36,9 @@ type Buffer struct {
 	b2 bytebufferpool.ByteBuffer
 }
 
+// TimestampFormat type.
+type TimestampFormat int
+
 // Entry collects all the information for the output.
 type Entry struct {
 	Config  Config
@@ -104,6 +107,9 @@ type EncoderTextConfig struct {
 
 	// Default: time.RFC3339
 	DatetimeLayout string
+
+	// Default: TimestampFormatSeconds
+	TimestampFormat TimestampFormat
 }
 
 // EncoderText is the text enconder.
@@ -126,6 +132,9 @@ type EncoderJSONConfig struct {
 
 	// Default: time.RFC3339
 	DatetimeLayout string
+
+	// Default: TimestampFormatSeconds
+	TimestampFormat TimestampFormat
 }
 
 // EnconderJSONFieldMap defines name of keys.

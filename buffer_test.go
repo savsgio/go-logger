@@ -378,15 +378,46 @@ func TestBuffer_WriteDatetime(t *testing.T) {
 }
 
 func TestBuffer_WriteTimestamp(t *testing.T) {
-	buf := NewBuffer()
-	now := time.Now()
+	type args struct {
+		format TimestampFormat
+		tsFunc func(t time.Time) int64
+	}
 
-	buf.WriteTimestamp(now)
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "seconds",
+			args: args{
+				format: TimestampFormatSeconds,
+				tsFunc: func(t time.Time) int64 { return t.Unix() },
+			},
+		},
+		{
+			name: "nanoseconds",
+			args: args{
+				format: TimestampFormatNanoseconds,
+				tsFunc: func(t time.Time) int64 { return t.UnixNano() },
+			},
+		},
+	}
 
-	wantTs := strconv.FormatInt(now.Unix(), 10) // nolint:stylecheck
+	for i := range tests {
+		test := tests[i]
 
-	if ts := buf.String(); ts != wantTs {
-		t.Errorf("timestamp == %s, want %s", ts, wantTs)
+		t.Run(test.name, func(t *testing.T) {
+			buf := NewBuffer()
+			now := time.Now()
+
+			buf.WriteTimestamp(now, test.args.format)
+
+			wantTs := strconv.FormatInt(test.args.tsFunc(now), 10) // nolint:stylecheck
+
+			if ts := buf.String(); ts != wantTs {
+				t.Errorf("timestamp == %s, want %s", ts, wantTs)
+			}
+		})
 	}
 }
 

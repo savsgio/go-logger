@@ -35,22 +35,25 @@ func Test_NewEncoderText(t *testing.T) {
 			},
 			want: want{
 				cfg: EncoderTextConfig{
-					Separator:      defaultTextSeparator,
-					DatetimeLayout: defaultDatetimeLayout,
+					Separator:       defaultTextSeparator,
+					DatetimeLayout:  defaultDatetimeLayout,
+					TimestampFormat: defaultTimestampFormat,
 				},
 			},
 		},
 		{
 			args: args{
 				cfg: EncoderTextConfig{
-					Separator:      "#",
-					DatetimeLayout: time.RFC1123,
+					Separator:       "#",
+					DatetimeLayout:  time.RFC1123,
+					TimestampFormat: TimestampFormatNanoseconds,
 				},
 			},
 			want: want{
 				cfg: EncoderTextConfig{
-					Separator:      "#",
-					DatetimeLayout: time.RFC1123,
+					Separator:       "#",
+					DatetimeLayout:  time.RFC1123,
+					TimestampFormat: TimestampFormatNanoseconds,
 				},
 			},
 		},

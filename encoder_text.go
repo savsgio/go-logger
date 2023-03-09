@@ -10,6 +10,10 @@ func NewEncoderText(cfg EncoderTextConfig) *EncoderText {
 		cfg.DatetimeLayout = defaultDatetimeLayout
 	}
 
+	if cfg.TimestampFormat == 0 {
+		cfg.TimestampFormat = defaultTimestampFormat
+	}
+
 	enc := new(EncoderText)
 	enc.cfg = cfg
 
@@ -56,7 +60,7 @@ func (enc *EncoderText) Encode(buf *Buffer, e Entry) error {
 	}
 
 	if e.Config.Timestamp {
-		buf.WriteTimestamp(e.Time)
+		buf.WriteTimestamp(e.Time, enc.cfg.TimestampFormat)
 		buf.WriteString(enc.cfg.Separator) // nolint:errcheck
 	}
 
