@@ -15,7 +15,8 @@ func newTestConfig() Config {
 		UTC:       true,
 		Shortfile: true,
 		Longfile:  false,
-		flag:      Ldatetime | Ltimestamp | LUTC | Lshortfile,
+		Function:  true,
+		flag:      Ldatetime | Ltimestamp | LUTC | Lshortfile | Lfunction,
 	}
 }
 

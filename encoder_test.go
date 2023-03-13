@@ -9,13 +9,14 @@ import (
 )
 
 const (
-	datetimeRegex   = `([2-9](\d{3})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})Z)`
-	timestampRegex  = `(\d+)`
-	levelRegex      = `([A-Z]+)`
-	fileCallerRegex = `((.*)\.go\:\d+)`
-	fieldsTextRegex = `(((.*)=(.*))+)`
-	fieldsJSONRegex = `((\"(fields\.)?(.*)\"\:\"(.*)\")+)`
-	messageRegex    = `(.*)`
+	datetimeRegex       = `([2-9](\d{3})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})Z)`
+	timestampRegex      = `(\d+)`
+	levelRegex          = `([A-Z]+)`
+	fileCallerRegex     = `((.*)\.go\:\d+)`
+	functionCallerRegex = `([a-zA-Z0-9\._\-\/]+)`
+	fieldsTextRegex     = `(((.*)=(.*))+)`
+	fieldsJSONRegex     = `((\"(fields\.)?(.*)\"\:\"(.*)\")+)`
+	messageRegex        = `(.*)`
 )
 
 type testEncodeArgs struct {
@@ -76,7 +77,7 @@ func testEncoderEncode(t *testing.T, enc Encoder, testCases []testEncodeCase) {
 
 		var caller runtime.Frame
 		if cfg.Shortfile || cfg.Longfile {
-			caller = getFileCaller(4)
+			caller = getFileCaller(3)
 		}
 
 		t.Run("", func(t *testing.T) {

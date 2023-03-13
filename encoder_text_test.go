@@ -167,6 +167,7 @@ func TestEncoderText_Encode(t *testing.T) { // nolint:funlen,dupl
 					Timestamp: true,
 					Shortfile: true,
 					Longfile:  true,
+					Function:  true,
 				},
 				level: DEBUG,
 				msg:   "Hello %s",
@@ -174,8 +175,8 @@ func TestEncoderText_Encode(t *testing.T) { // nolint:funlen,dupl
 			},
 			want: testEncodeWant{
 				lineRegexExpr: fmt.Sprintf(
-					"^%s - %s - %s - %s - %s\n$",
-					datetimeRegex, timestampRegex, levelRegex, fileCallerRegex, messageRegex,
+					"^%s - %s - %s - %s - %s - %s\n$",
+					datetimeRegex, timestampRegex, levelRegex, fileCallerRegex, functionCallerRegex, messageRegex,
 				),
 			},
 		},
@@ -188,6 +189,7 @@ func TestEncoderText_Encode(t *testing.T) { // nolint:funlen,dupl
 					Timestamp: true,
 					Shortfile: true,
 					Longfile:  true,
+					Function:  true,
 				},
 				level: DEBUG,
 				msg:   "Hello %s",
@@ -195,8 +197,9 @@ func TestEncoderText_Encode(t *testing.T) { // nolint:funlen,dupl
 			},
 			want: testEncodeWant{
 				lineRegexExpr: fmt.Sprintf(
-					"^%s - %s - %s - %s - %s - %s\n$",
-					datetimeRegex, timestampRegex, levelRegex, fileCallerRegex, fieldsTextRegex, messageRegex,
+					"^%s - %s - %s - %s - %s - %s - %s\n$",
+					datetimeRegex, timestampRegex, levelRegex, fileCallerRegex,
+					functionCallerRegex, fieldsTextRegex, messageRegex,
 				),
 			},
 		},
@@ -209,6 +212,7 @@ func TestEncoderText_Encode(t *testing.T) { // nolint:funlen,dupl
 					Timestamp: true,
 					Shortfile: true,
 					Longfile:  true,
+					Function:  true,
 				},
 				level: PRINT,
 				msg:   "Hello %s",
@@ -216,8 +220,9 @@ func TestEncoderText_Encode(t *testing.T) { // nolint:funlen,dupl
 			},
 			want: testEncodeWant{
 				lineRegexExpr: fmt.Sprintf(
-					"^%s - %s - %s - %s - %s\n$",
-					datetimeRegex, timestampRegex, fileCallerRegex, fieldsTextRegex, messageRegex,
+					"^%s - %s - %s - %s - %s - %s\n$",
+					datetimeRegex, timestampRegex, fileCallerRegex,
+					functionCallerRegex, fieldsTextRegex, messageRegex,
 				),
 			},
 		},

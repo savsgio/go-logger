@@ -74,6 +74,11 @@ func (enc *EncoderText) Encode(buf *Buffer, e Entry) error {
 		buf.WriteString(enc.cfg.Separator) // nolint:errcheck
 	}
 
+	if e.Config.Function {
+		buf.WriteString(e.Caller.Function) // nolint:errcheck
+		buf.WriteString(enc.cfg.Separator) // nolint:errcheck
+	}
+
 	buf.WriteString(enc.FieldsEncoded()) // nolint:errcheck
 	buf.WriteString(e.Message)           // nolint:errcheck
 	buf.WriteNewLine()

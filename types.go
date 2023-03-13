@@ -58,6 +58,7 @@ type Config struct {
 	UTC       bool
 	Shortfile bool
 	Longfile  bool
+	Function  bool
 
 	flag      Flag
 	calldepth int
@@ -152,6 +153,9 @@ type EnconderJSONFieldMap struct {
 
 	// Default: file
 	FileKey string
+
+	// Default: func
+	FunctionKey string
 
 	// Default: message
 	MessageKey string

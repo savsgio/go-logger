@@ -21,6 +21,8 @@ const (
 	LUTC
 	Llongfile
 	Lshortfile
+	Lfunction
+
 	LstdFlags = Ldatetime
 )
 
@@ -51,6 +53,7 @@ const (
 	defaultJSONFieldKeyTimestamp = "timestamp"
 	defaultJSONFieldKeyLevel     = "level"
 	defaultJSONFieldKeyFile      = "file"
+	defaultJSONFieldKeyFunction  = "func"
 	defaultJSONFieldKeyMessage   = "message"
 )
 

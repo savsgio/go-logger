@@ -31,7 +31,7 @@ func newEncodeOutputFunc(l *Logger) encodeOutputFunc {
 				}
 			}
 
-			if l.cfg.Shortfile || l.cfg.Longfile {
+			if l.cfg.Shortfile || l.cfg.Longfile || l.cfg.Function {
 				e.Caller = getFileCaller(l.cfg.calldepth)
 			}
 
@@ -140,6 +140,7 @@ func (l *Logger) SetFlags(flag Flag) {
 	l.cfg.UTC = flag&LUTC != 0
 	l.cfg.Shortfile = flag&Lshortfile != 0
 	l.cfg.Longfile = flag&Llongfile != 0
+	l.cfg.Function = flag&Lfunction != 0
 	l.cfg.flag = flag
 
 	l.mu.Unlock()

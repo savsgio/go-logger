@@ -22,6 +22,10 @@ func NewEncoderJSON(cfg EncoderJSONConfig) *EncoderJSON {
 		cfg.FieldMap.FileKey = defaultJSONFieldKeyFile
 	}
 
+	if cfg.FieldMap.FunctionKey == "" {
+		cfg.FieldMap.FunctionKey = defaultJSONFieldKeyFunction
+	}
+
 	if cfg.FieldMap.MessageKey == "" {
 		cfg.FieldMap.MessageKey = defaultJSONFieldKeyMessage
 	}
@@ -107,7 +111,7 @@ func (enc *EncoderJSON) Configure(cfg Config) {
 }
 
 // Encode encodes the given entry to the buffer.
-func (enc *EncoderJSON) Encode(buf *Buffer, e Entry) error {
+func (enc *EncoderJSON) Encode(buf *Buffer, e Entry) error { // nolint:funlen
 	buf.WriteByte('{') // nolint:errcheck
 
 	if e.Config.Datetime {
@@ -140,6 +144,14 @@ func (enc *EncoderJSON) Encode(buf *Buffer, e Entry) error {
 		buf.WriteString("\":\"")                  // nolint:errcheck
 		buf.WriteFileCaller(e.Caller, e.Config.Shortfile)
 		buf.WriteString("\",") // nolint:errcheck
+	}
+
+	if e.Config.Function {
+		buf.WriteString("\"")                         // nolint:errcheck
+		buf.WriteString(enc.cfg.FieldMap.FunctionKey) // nolint:errcheck
+		buf.WriteString("\":\"")                      // nolint:errcheck
+		buf.WriteString(e.Caller.Function)            // nolint:errcheck
+		buf.WriteString("\",")                        // nolint:errcheck
 	}
 
 	buf.WriteString(enc.FieldsEncoded())         // nolint:errcheck

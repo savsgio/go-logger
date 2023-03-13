@@ -83,7 +83,7 @@ func Test_newEncodeOutputFunc(t *testing.T) { // nolint:funlen
 			t.Errorf("entry level == %s, want %s", e.Level, level)
 		}
 
-		if e.Caller.File == "" || e.Caller.Line == 0 {
+		if e.Caller.File == "" || e.Caller.Line == 0 || e.Caller.Function == "" {
 			t.Error("entry caller undefined")
 		}
 
@@ -484,6 +484,16 @@ func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) {
 			},
 		},
 		{
+			name: "function",
+			args: args{flag: Lfunction},
+			want: want{
+				cfg: Config{
+					Function: true,
+					flag:     Lfunction,
+				},
+			},
+		},
+		{
 			name: "std",
 			args: args{flag: LstdFlags},
 			want: want{
@@ -495,7 +505,7 @@ func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) {
 		},
 		{
 			name: "all",
-			args: args{flag: Ldatetime | Ltimestamp | LUTC | Llongfile | Lshortfile},
+			args: args{flag: Ldatetime | Ltimestamp | LUTC | Llongfile | Lshortfile | Lfunction},
 			want: want{
 				cfg: Config{
 					Datetime:  true,
@@ -503,7 +513,8 @@ func testLoggerSetFlags(t *testing.T, l *Logger, setFlagsFunc func(flag Flag)) {
 					UTC:       true,
 					Shortfile: true,
 					Longfile:  true,
-					flag:      Ldatetime | Ltimestamp | LUTC | Llongfile | Lshortfile,
+					Function:  true,
+					flag:      Ldatetime | Ltimestamp | LUTC | Llongfile | Lshortfile | Lfunction,
 				},
 			},
 		},
