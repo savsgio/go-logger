@@ -14,9 +14,11 @@ func newEncodeOutputFunc(l *Logger) encodeOutputFunc {
 			buf := AcquireBuffer()
 
 			e := Entry{
-				Config:  l.cfg,
-				Level:   level,
-				Message: buf.formatMessage(msg, args),
+				Config:     l.cfg,
+				Level:      level,
+				Message:    buf.formatMessage(msg, args),
+				RawMessage: msg,
+				Args:       args,
 			}
 			e.Caller.File = unknownFile
 			e.Caller.Line = 0

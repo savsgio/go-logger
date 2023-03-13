@@ -71,15 +71,6 @@ func Test_newEncodeOutputFunc(t *testing.T) { // nolint:funlen
 			t.Errorf("entry config == %v, want %v", e.Config, l.cfg)
 		}
 
-		if e.Level != level {
-			t.Errorf("entry level == %s, want %s", e.Level, level)
-		}
-
-		wantResult = buf.formatMessage(msg, args)
-		if e.Message != wantResult {
-			t.Errorf("entry message == %s, want %s", e.Message, wantResult)
-		}
-
 		if e.Time.IsZero() {
 			t.Error("entry time is zeo")
 		}
@@ -88,8 +79,25 @@ func Test_newEncodeOutputFunc(t *testing.T) { // nolint:funlen
 			t.Error("entry time is not in UTC")
 		}
 
+		if e.Level != level {
+			t.Errorf("entry level == %s, want %s", e.Level, level)
+		}
+
 		if e.Caller.File == "" || e.Caller.Line == 0 {
 			t.Error("entry caller undefined")
+		}
+
+		wantResult = buf.formatMessage(msg, args)
+		if e.Message != wantResult {
+			t.Errorf("entry message == %s, want %s", e.Message, wantResult)
+		}
+
+		if e.RawMessage != msg {
+			t.Errorf("entry raw message == %s, want %s", e.RawMessage, msg)
+		}
+
+		if !reflect.DeepEqual(e.Args, args) {
+			t.Errorf("entry args == %v, want %v", e.Args, args)
 		}
 
 		_, err := buf.WriteString(e.Message)

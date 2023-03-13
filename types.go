@@ -41,11 +41,13 @@ type TimestampFormat int
 
 // Entry collects all the information for the output.
 type Entry struct {
-	Config  Config
-	Time    time.Time
-	Level   Level
-	Caller  runtime.Frame
-	Message string
+	Config     Config
+	Time       time.Time
+	Level      Level
+	Caller     runtime.Frame
+	Message    string
+	RawMessage string
+	Args       []interface{}
 }
 
 // Config is the logger configuration.
