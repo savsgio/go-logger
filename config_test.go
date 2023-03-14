@@ -17,6 +17,7 @@ func newTestConfig() Config {
 		Longfile:  false,
 		Function:  true,
 		flag:      Ldatetime | Ltimestamp | LUTC | Lshortfile | Lfunction,
+		calldepth: calldepth,
 	}
 }
 

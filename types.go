@@ -9,8 +9,6 @@ import (
 	"github.com/valyala/bytebufferpool"
 )
 
-type encodeOutputFunc func(level Level, msg string, args []interface{})
-
 type exitFunc func(code int)
 
 type levelHooks struct {
@@ -66,14 +64,13 @@ type Config struct {
 
 // Logger type.
 type Logger struct {
-	mu           sync.RWMutex // ensures atomic writes; protects the following fields
-	cfg          Config
-	level        Level
-	output       io.Writer
-	encoder      Encoder
-	encodeOutput encodeOutputFunc
-	hooks        *levelHooks
-	exit         exitFunc
+	mu      sync.RWMutex // ensures atomic writes; protects the following fields
+	cfg     Config
+	level   Level
+	output  io.Writer
+	encoder Encoder
+	hooks   *levelHooks
+	exit    exitFunc
 }
 
 // Hook represents a extended functionality that will be fired when logging.

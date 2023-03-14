@@ -6,65 +6,60 @@ import (
 	"time"
 )
 
-func newEncodeOutputFunc(l *Logger) encodeOutputFunc {
-	return func(level Level, msg string, args []interface{}) {
-		l.mu.RLock()
-
-		if l.isLevelEnabled(level) {
-			buf := AcquireBuffer()
-
-			e := Entry{
-				Config:     l.cfg,
-				Level:      level,
-				Message:    buf.formatMessage(msg, args),
-				RawMessage: msg,
-				Args:       args,
-			}
-			e.Caller.File = unknownFile
-			e.Caller.Line = 0
-
-			if l.cfg.Datetime || l.cfg.Timestamp {
-				e.Time = time.Now()
-
-				if l.cfg.UTC {
-					e.Time = e.Time.UTC()
-				}
-			}
-
-			if l.cfg.Shortfile || l.cfg.Longfile || l.cfg.Function {
-				e.Caller = getFileCaller(l.cfg.calldepth)
-			}
-
-			l.encoder.Encode(buf, e)    // nolint:errcheck
-			l.output.Write(buf.Bytes()) // nolint:errcheck
-			l.hooks.fire(e)
-
-			ReleaseBuffer(buf)
-		}
-
-		l.mu.RUnlock()
-	}
-}
-
 // New creates a new Logger.
 func New(level Level, output io.Writer, fields ...Field) *Logger {
 	l := new(Logger)
-	l.cfg = Config{
-		calldepth: calldepth,
-	}
 	l.level = level
 	l.output = output
 	l.encoder = NewEncoderText(EncoderTextConfig{
 		Separator: defaultTextSeparator,
 	})
-	l.encodeOutput = newEncodeOutputFunc(l)
 	l.hooks = newLevelHooks()
 	l.exit = os.Exit
 
+	l.setCalldepth(calldepth)
 	l.SetFields(fields...)
 	l.SetFlags(LstdFlags)
 
 	return l
+}
+
+func (l *Logger) encodeOutput(level Level, msg string, args []interface{}) {
+	l.mu.RLock()
+
+	if l.isLevelEnabled(level) {
+		buf := AcquireBuffer()
+
+		e := Entry{
+			Config:     l.cfg,
+			Level:      level,
+			Message:    buf.formatMessage(msg, args),
+			RawMessage: msg,
+			Args:       args,
+		}
+		e.Caller.File = unknownFile
+		e.Caller.Line = 0
+
+		if l.cfg.Datetime || l.cfg.Timestamp {
+			e.Time = time.Now()
+
+			if l.cfg.UTC {
+				e.Time = e.Time.UTC()
+			}
+		}
+
+		if l.cfg.Shortfile || l.cfg.Longfile || l.cfg.Function {
+			e.Caller = getFileCaller(l.cfg.calldepth)
+		}
+
+		l.encoder.Encode(buf, e)    // nolint:errcheck
+		l.output.Write(buf.Bytes()) // nolint:errcheck
+		l.hooks.fire(e)
+
+		ReleaseBuffer(buf)
+	}
+
+	l.mu.RUnlock()
 }
 
 func (l *Logger) getField(key string) *Field {
@@ -105,7 +100,6 @@ func (l *Logger) copy() *Logger {
 	l2.level = l.level
 	l2.output = l.output
 	l2.encoder = l.encoder.Copy()
-	l2.encodeOutput = newEncodeOutputFunc(l2)
 	l2.hooks = l.hooks.copy()
 	l2.exit = l.exit
 

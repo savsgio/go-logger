@@ -32,7 +32,10 @@ const (
 	TimestampFormatNanoseconds
 )
 
-const calldepth = 6
+const (
+	calldepth    = 4
+	calldepthStd = calldepth + 1
+)
 
 const unknownFile = "???"
 

@@ -37,6 +37,9 @@ func TestLogger_std_AddHook(t *testing.T) {
 }
 
 func TestLogger_std_Levels(t *testing.T) { // nolint:funlen
+	std = newTestLogger()
+	std.setCalldepth(calldepthStd)
+
 	testCases := []testLoggerLevelCase{
 		{
 			name: "Print",

@@ -6,7 +6,9 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"reflect"
+	"regexp"
 	"testing"
 )
 
@@ -31,9 +33,8 @@ type testLoggerLevelCase struct {
 func newTestLogger() *Logger {
 	cfg := newTestConfig()
 
-	l := New(DEBUG, ioutil.Discard)
+	l := New(DEBUG, ioutil.Discard, cfg.Fields...)
 	l.setCalldepth(cfg.calldepth)
-	l.SetFields(cfg.Fields...)
 	l.SetFlags(cfg.flag)
 
 	return l
@@ -44,96 +45,6 @@ func assertEncoder(t *testing.T, cfg Config, enc Encoder) {
 
 	if fieldsEncoded := enc.FieldsEncoded(); len(cfg.Fields) > 0 && fieldsEncoded == "" {
 		t.Error("Logger.encoder has not encoded fields")
-	}
-}
-
-func Test_newEncodeOutputFunc(t *testing.T) { // nolint:funlen
-	msg := "hello %s"
-	args := []interface{}{"men"}
-	level := DEBUG
-	output := new(bytes.Buffer)
-
-	l := newTestLogger()
-	l.SetOutput(output)
-
-	var wantResult string
-
-	enc := new(mockEncoder)
-	enc.configure = func(cfg Config) {}
-	enc.encode = func(buf *Buffer, e Entry) error {
-		t.Helper()
-
-		if buf == nil {
-			t.Error("nil buffer")
-		}
-
-		if !reflect.DeepEqual(e.Config, l.cfg) {
-			t.Errorf("entry config == %v, want %v", e.Config, l.cfg)
-		}
-
-		if e.Time.IsZero() {
-			t.Error("entry time is zeo")
-		}
-
-		if !e.Time.Equal(e.Time.UTC()) {
-			t.Error("entry time is not in UTC")
-		}
-
-		if e.Level != level {
-			t.Errorf("entry level == %s, want %s", e.Level, level)
-		}
-
-		if e.Caller.File == "" || e.Caller.Line == 0 || e.Caller.Function == "" {
-			t.Error("entry caller undefined")
-		}
-
-		wantResult = buf.formatMessage(msg, args)
-		if e.Message != wantResult {
-			t.Errorf("entry message == %s, want %s", e.Message, wantResult)
-		}
-
-		if e.RawMessage != msg {
-			t.Errorf("entry raw message == %s, want %s", e.RawMessage, msg)
-		}
-
-		if !reflect.DeepEqual(e.Args, args) {
-			t.Errorf("entry args == %v, want %v", e.Args, args)
-		}
-
-		_, err := buf.WriteString(e.Message)
-
-		return err
-	}
-
-	l.SetEncoder(enc)
-
-	hookFired := false
-	hook := &testHook{
-		levels: []Level{level},
-		fireFunc: func(e Entry) error {
-			hookFired = true
-
-			return nil
-		},
-	}
-
-	if err := l.AddHook(hook); err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
-	fn := newEncodeOutputFunc(l)
-	if fn == nil {
-		t.Fatal("nil function")
-	}
-
-	fn(level, msg, args)
-
-	if result := output.String(); result != wantResult {
-		t.Errorf("output result == %s, want %s", result, wantResult)
-	}
-
-	if !hookFired {
-		t.Errorf("hook not fired")
 	}
 }
 
@@ -173,10 +84,6 @@ func Test_New(t *testing.T) {
 
 	assertEncoder(t, l.cfg, l.encoder)
 
-	if l.encodeOutput == nil {
-		t.Fatal("Logger.encodeOutput is nil")
-	}
-
 	loggerExitPtr := reflect.ValueOf(l.exit).Pointer()
 	osExitPtr := reflect.ValueOf(os.Exit).Pointer()
 
@@ -185,25 +92,115 @@ func Test_New(t *testing.T) {
 	}
 }
 
-func TestLogger_encodeOutput(t *testing.T) {
+func TestLogger_encodeOutput(t *testing.T) { // nolint:funlen
+	msg := "hello %s"
+	args := []interface{}{"men"}
+	level := DEBUG
+	calldepth := calldepth - 1
 	output := new(bytes.Buffer)
 
 	l := newTestLogger()
 	l.SetOutput(output)
-	l.SetLevel(INFO)
+	l.setCalldepth(calldepth)
 
-	l.encodeOutput(ERROR, "hello %s", []interface{}{"word"})
+	var wantResult string
 
-	if output.Len() == 0 {
-		t.Error("enconded output has not been written")
+	enc := new(mockEncoder)
+	enc.configure = func(cfg Config) {}
+	enc.encode = func(buf *Buffer, e Entry) error {
+		t.Helper()
+
+		if buf == nil {
+			t.Error("nil buffer")
+		}
+
+		if !reflect.DeepEqual(e.Config, l.cfg) {
+			t.Errorf("entry config == %v, want %v", e.Config, l.cfg)
+		}
+
+		if e.Time.IsZero() {
+			t.Error("entry time is zeo")
+		}
+
+		if !e.Time.Equal(e.Time.UTC()) {
+			t.Error("entry time is not in UTC")
+		}
+
+		if e.Level != level {
+			t.Errorf("entry level == %s, want %s", e.Level, level)
+		}
+
+		wantFile := "logger_test.go"
+		if _, file := filepath.Split(e.Caller.File); file != wantFile {
+			t.Errorf("entry caller file == %s, want %s", file, wantFile)
+		}
+
+		if e.Caller.Line == 0 {
+			t.Errorf("entry caller line is zero")
+		}
+
+		wantFunction := "github.com/savsgio/go-logger/v4.TestLogger_encodeOutput"
+		if e.Caller.Function != wantFunction {
+			t.Errorf("entry caller function == %s, want %s", e.Caller.Function, wantFunction)
+		}
+
+		wantResult = buf.formatMessage(msg, args)
+		if e.Message != wantResult {
+			t.Errorf("entry message == %s, want %s", e.Message, wantResult)
+		}
+
+		if e.RawMessage != msg {
+			t.Errorf("entry raw message == %s, want %s", e.RawMessage, msg)
+		}
+
+		if !reflect.DeepEqual(e.Args, args) {
+			t.Errorf("entry args == %v, want %v", e.Args, args)
+		}
+
+		_, err := buf.WriteString(e.Message)
+
+		return err
 	}
 
+	l.SetEncoder(enc)
+
+	hookFired := false
+	hook := &testHook{
+		levels: []Level{level},
+		fireFunc: func(e Entry) error {
+			hookFired = true
+
+			return nil
+		},
+	}
+
+	if err := l.AddHook(hook); err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	l.encodeOutput(level, msg, args)
+
+	if result := output.String(); result != wantResult {
+		t.Errorf("output result == %s, want %s", result, wantResult)
+	}
+
+	if !hookFired {
+		t.Errorf("hook not fired")
+	}
+
+	hookFired = false
+
 	output.Reset()
+	l.SetLevel(ERROR)
 
 	l.encodeOutput(DEBUG, "hello %s", []interface{}{"word"})
 
 	if output.Len() > 0 {
 		t.Error("enconded output has been written")
+	}
+
+	if hookFired {
+		t.Errorf("hook fired")
 	}
 }
 
@@ -636,7 +633,9 @@ func TestLogger_IsLevelEnabled(t *testing.T) {
 	testLoggerIsLevelEnabled(t, l, l.IsLevelEnabled)
 }
 
-func TestLogger_AddHook(t *testing.T) {
+func testLoggerAddHook(t *testing.T, l *Logger, addHookFunc func(h Hook) error) {
+	t.Helper()
+
 	type args struct {
 		hook *testHook
 	}
@@ -676,9 +675,7 @@ func TestLogger_AddHook(t *testing.T) {
 		test := tests[i]
 
 		t.Run("", func(t *testing.T) {
-			l := newTestLogger()
-
-			if err := l.AddHook(test.args.hook); !errors.Is(err, test.want.err) {
+			if err := addHookFunc(test.args.hook); !errors.Is(err, test.want.err) {
 				t.Errorf("error == %v, want %v", err, test.want.err)
 			}
 
@@ -691,55 +688,67 @@ func TestLogger_AddHook(t *testing.T) {
 	}
 }
 
+func TestLogger_AddHook(t *testing.T) {
+	l := newTestLogger()
+	testLoggerAddHook(t, l, l.AddHook)
+}
+
 func testLoggerLevels(t *testing.T, l *Logger, testCases []testLoggerLevelCase) { // nolint:funlen
 	t.Helper()
 
-	type loggerWrapper struct {
-		*Logger
+	var (
+		exitCode = -1
+		entry    = Entry{}
+	)
 
-		encodeLevel   Level
-		encodeMsg     string
-		encodeArgs    []interface{}
-		fatalExitCode int
-	}
-
-	lw := &loggerWrapper{
-		Logger:        l,
-		encodeLevel:   invalid,
-		fatalExitCode: -1,
-	}
-	lw.Logger.encodeOutput = func(level Level, msg string, args []interface{}) {
-		lw.encodeLevel = level
-		lw.encodeMsg = msg
-		lw.encodeArgs = args
-	}
-	lw.Logger.exit = func(code int) {
-		lw.fatalExitCode = code
+	l.exit = func(code int) {
+		exitCode = code
 	}
 
-	resetLoggerWrapper := func(lw *loggerWrapper) {
-		lw.encodeLevel = invalid
-		lw.encodeMsg = ""
-		lw.encodeArgs = nil
-		lw.fatalExitCode = -1
+	enc := new(mockEncoder)
+	enc.configure = func(c Config) {}
+	enc.encode = func(b *Buffer, e Entry) error {
+		entry = e
+
+		return nil
 	}
+
+	l.SetEncoder(enc)
 
 	assert := func(msg string, args []interface{}, want testLoggerLevelWant) {
-		if lw.encodeLevel != want.level {
-			t.Errorf("level == %d, want %d", lw.encodeLevel, want.level)
+		if entry.Level != want.level {
+			t.Errorf("level == %d, want %d", entry.Level, want.level)
 		}
 
-		if lw.encodeMsg != msg {
-			t.Errorf("msg == %s, want %s", lw.encodeMsg, msg)
+		wantFile := "logger_test.go"
+		if _, file := filepath.Split(entry.Caller.File); file != wantFile {
+			t.Errorf("entry caller file == %s, want %s", file, wantFile)
 		}
 
-		if !reflect.DeepEqual(lw.encodeArgs, args) {
-			t.Errorf("args == %s, want %s", lw.encodeArgs, args)
+		if entry.Caller.Line == 0 {
+			t.Errorf("entry caller line is zero")
 		}
 
-		if lw.fatalExitCode != want.exitCode {
-			t.Errorf("fatalExitCode == %d, want %d", lw.fatalExitCode, want.exitCode)
+		wantFunction := regexp.MustCompile("^github.com/savsgio/go-logger/v4.testLoggerLevels.func([0-9]{1})$")
+		if !wantFunction.MatchString(entry.Caller.Function) {
+			t.Errorf("entry caller function == %s, want %s", entry.Caller.Function, wantFunction)
 		}
+
+		if entry.RawMessage != msg {
+			t.Errorf("msg == %s, want %s", entry.RawMessage, msg)
+		}
+
+		if !reflect.DeepEqual(entry.Args, args) {
+			t.Errorf("args == %s, want %s", entry.Args, args)
+		}
+
+		if exitCode != want.exitCode {
+			t.Errorf("exit code == %d, want %d", exitCode, want.exitCode)
+		}
+
+		// reset
+		exitCode = -1
+		entry = Entry{}
 	}
 
 	for i := range testCases {
@@ -755,8 +764,6 @@ func testLoggerLevels(t *testing.T, l *Logger, testCases []testLoggerLevelCase) 
 			assert(msg, args, test.want)
 		})
 
-		resetLoggerWrapper(lw)
-
 		t.Run(test.name+"f", func(t *testing.T) {
 			t.Helper()
 
@@ -766,8 +773,6 @@ func testLoggerLevels(t *testing.T, l *Logger, testCases []testLoggerLevelCase) 
 			test.args.fnf(msg, args...)
 			assert(msg, args, test.want)
 		})
-
-		resetLoggerWrapper(lw)
 	}
 }
 
