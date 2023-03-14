@@ -52,6 +52,11 @@ func IsLevelEnabled(level Level) bool {
 	return std.IsLevelEnabled(level)
 }
 
+// AddHook registers the given hook to the standard logger.
+func AddHook(h Hook) error {
+	return std.AddHook(h)
+}
+
 func Print(msg ...interface{}) {
 	std.Print(msg...)
 }

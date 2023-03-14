@@ -32,6 +32,10 @@ func TestLogger_std_IsLevelEnabled(t *testing.T) {
 	testLoggerIsLevelEnabled(t, std, IsLevelEnabled)
 }
 
+func TestLogger_std_AddHook(t *testing.T) {
+	testLoggerAddHook(t, std, AddHook)
+}
+
 func TestLogger_std_Levels(t *testing.T) { // nolint:funlen
 	testCases := []testLoggerLevelCase{
 		{
