@@ -192,6 +192,16 @@ func (l *Logger) Tracef(msg string, args ...interface{}) {
 	l.encodeOutput(TRACE, msg, args)
 }
 
+func (l *Logger) Panic(msg ...interface{}) {
+	l.encodeOutput(PANIC, "", msg)
+	panic(l)
+}
+
+func (l *Logger) Panicf(msg string, args ...interface{}) {
+	l.encodeOutput(PANIC, msg, args)
+	panic(l)
+}
+
 func (l *Logger) Fatal(msg ...interface{}) {
 	l.encodeOutput(FATAL, "", msg)
 	l.exit(1)

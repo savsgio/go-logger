@@ -7,6 +7,7 @@ const (
 	invalid Level = iota - 1
 	PRINT
 	TRACE
+	PANIC
 	FATAL
 	ERROR
 	WARNING
@@ -42,6 +43,7 @@ const unknownFile = "???"
 const (
 	printLevelStr   = ""
 	traceLevelStr   = "TRACE"
+	panicLevelStr   = "PANIC"
 	fatalLevelStr   = "FATAL"
 	errorLevelStr   = "ERROR"
 	warningLevelStr = "WARNING"

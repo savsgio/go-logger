@@ -73,6 +73,14 @@ func Tracef(msg string, args ...interface{}) {
 	std.Tracef(msg, args...)
 }
 
+func Panic(msg ...interface{}) {
+	std.Panic(msg...)
+}
+
+func Panicf(msg string, args ...interface{}) {
+	std.Panicf(msg, args...)
+}
+
 func Fatal(msg ...interface{}) {
 	std.Fatal(msg...)
 }

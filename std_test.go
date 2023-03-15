@@ -64,6 +64,17 @@ func TestLogger_std_Levels(t *testing.T) { // nolint:funlen
 			},
 		},
 		{
+			name: "Panic",
+			args: testLoggerLevelArgs{
+				fn:  Panic,
+				fnf: Panicf,
+			},
+			want: testLoggerLevelWant{
+				level:    PANIC,
+				exitCode: -1,
+			},
+		},
+		{
 			name: "Fatal",
 			args: testLoggerLevelArgs{
 				fn:  Fatal,

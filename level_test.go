@@ -41,6 +41,16 @@ func Test_ParseLevel(t *testing.T) { // nolint:funlen
 			},
 		},
 		{
+			name: "Panic",
+			args: args{
+				levelStr: "paNiC",
+			},
+			want: want{
+				level: PANIC,
+				err:   nil,
+			},
+		},
+		{
 			name: "Fatal",
 			args: args{
 				levelStr: "FatAL",
@@ -151,6 +161,15 @@ func TestLevel_String(t *testing.T) { // nolint:funlen
 			},
 			want: want{
 				result: traceLevelStr,
+			},
+		},
+		{
+			name: "Panic",
+			args: args{
+				level: PANIC,
+			},
+			want: want{
+				result: panicLevelStr,
 			},
 		},
 		{

@@ -11,6 +11,8 @@ func ParseLevel(levelStr string) (level Level, err error) {
 		level = PRINT
 	case traceLevelStr:
 		level = TRACE
+	case panicLevelStr:
+		level = PANIC
 	case fatalLevelStr:
 		level = FATAL
 	case errorLevelStr:
@@ -36,6 +38,8 @@ func (l Level) String() string {
 		return printLevelStr
 	case TRACE:
 		return traceLevelStr
+	case PANIC:
+		return panicLevelStr
 	case FATAL:
 		return fatalLevelStr
 	case ERROR:

@@ -751,11 +751,27 @@ func testLoggerLevels(t *testing.T, l *Logger, testCases []testLoggerLevelCase) 
 		entry = Entry{}
 	}
 
+	assertPanic := func(want testLoggerLevelWant) {
+		recv := recover()
+		if recv == nil {
+			return
+		}
+
+		if want.level != PANIC {
+			t.Errorf("panic raised with level: %s", want.level)
+		}
+
+		if reflect.ValueOf(recv).Pointer() != reflect.ValueOf(l).Pointer() {
+			t.Errorf("panic value == %p, want %p", recv, l)
+		}
+	}
+
 	for i := range testCases {
 		test := testCases[i]
 
 		t.Run(test.name, func(t *testing.T) {
 			t.Helper()
+			defer assertPanic(test.want)
 
 			msg := ""
 			args := []interface{}{"Hello", "world"}
@@ -766,6 +782,7 @@ func testLoggerLevels(t *testing.T, l *Logger, testCases []testLoggerLevelCase) 
 
 		t.Run(test.name+"f", func(t *testing.T) {
 			t.Helper()
+			defer assertPanic(test.want)
 
 			msg := "Hello %s"
 			args := []interface{}{"world"}
@@ -799,6 +816,17 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    TRACE,
+				exitCode: -1,
+			},
+		},
+		{
+			name: "Panic",
+			args: testLoggerLevelArgs{
+				fn:  l.Panic,
+				fnf: l.Panicf,
+			},
+			want: testLoggerLevelWant{
+				level:    PANIC,
 				exitCode: -1,
 			},
 		},
