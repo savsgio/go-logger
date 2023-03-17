@@ -31,6 +31,7 @@ go get github.com/savsgio/go-logger/v4
 | ------- | --------------- | ----------------- |
 | Print   | logger.PRINT    |                   |
 | Trace   | logger.TRACE    | trace / TRACE     |
+| Panic   | logger.PANIC    | panic / PANIC     |
 | Fatal   | logger.FATAL    | fatal / FATAL     |
 | Error   | logger.ERROR    | error / ERROR     |
 | Warning | logger.WARNING  | warning / WARNING |
