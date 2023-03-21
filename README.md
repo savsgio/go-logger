@@ -30,13 +30,13 @@ go get github.com/savsgio/go-logger/v4
 | Level   | Code (constant) | Value (str)       |
 | ------- | --------------- | ----------------- |
 | Print   | logger.PRINT    |                   |
-| Trace   | logger.TRACE    | trace / TRACE     |
 | Panic   | logger.PANIC    | panic / PANIC     |
 | Fatal   | logger.FATAL    | fatal / FATAL     |
 | Error   | logger.ERROR    | error / ERROR     |
 | Warning | logger.WARNING  | warning / WARNING |
 | Info    | logger.INFO     | info / INFO       |
 | Debug   | logger.DEBUG    | debug / DEBUG     |
+| Trace   | logger.TRACE    | trace / TRACE     |
 
 **NOTE:** _The default level of standard logger is **INFO**._
 
