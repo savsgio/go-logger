@@ -31,16 +31,6 @@ func Test_ParseLevel(t *testing.T) { // nolint:funlen
 			},
 		},
 		{
-			name: "Trace",
-			args: args{
-				levelStr: "trace",
-			},
-			want: want{
-				level: TRACE,
-				err:   nil,
-			},
-		},
-		{
 			name: "Panic",
 			args: args{
 				levelStr: "paNiC",
@@ -101,6 +91,16 @@ func Test_ParseLevel(t *testing.T) { // nolint:funlen
 			},
 		},
 		{
+			name: "Trace",
+			args: args{
+				levelStr: "trace",
+			},
+			want: want{
+				level: TRACE,
+				err:   nil,
+			},
+		},
+		{
 			name: "Invalid",
 			args: args{
 				levelStr: "inValId",
@@ -155,15 +155,6 @@ func TestLevel_String(t *testing.T) { // nolint:funlen
 			},
 		},
 		{
-			name: "Trace",
-			args: args{
-				level: TRACE,
-			},
-			want: want{
-				result: traceLevelStr,
-			},
-		},
-		{
 			name: "Panic",
 			args: args{
 				level: PANIC,
@@ -215,6 +206,15 @@ func TestLevel_String(t *testing.T) { // nolint:funlen
 			},
 			want: want{
 				result: debugLevelStr,
+			},
+		},
+		{
+			name: "Trace",
+			args: args{
+				level: TRACE,
+			},
+			want: want{
+				result: traceLevelStr,
 			},
 		},
 		{

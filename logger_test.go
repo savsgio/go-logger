@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-var levels = []Level{PRINT, TRACE, FATAL, ERROR, WARNING, INFO, DEBUG}
+var levels = []Level{PRINT, FATAL, ERROR, WARNING, INFO, DEBUG, TRACE}
 
 type testLoggerLevelArgs struct {
 	fn  func(msg ...interface{})
@@ -33,7 +33,7 @@ type testLoggerLevelCase struct {
 func newTestLogger() *Logger {
 	cfg := newTestConfig()
 
-	l := New(DEBUG, ioutil.Discard, cfg.Fields...)
+	l := New(TRACE, ioutil.Discard, cfg.Fields...)
 	l.setCalldepth(cfg.calldepth)
 	l.SetFlags(cfg.flag)
 
@@ -769,6 +769,8 @@ func testLoggerLevels(t *testing.T, l *Logger, testCases []testLoggerLevelCase) 
 	for i := range testCases {
 		test := testCases[i]
 
+		l.SetLevel(test.want.level)
+
 		t.Run(test.name, func(t *testing.T) {
 			t.Helper()
 			defer assertPanic(test.want)
@@ -805,17 +807,6 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    PRINT,
-				exitCode: -1,
-			},
-		},
-		{
-			name: "Trace",
-			args: testLoggerLevelArgs{
-				fn:  l.Trace,
-				fnf: l.Tracef,
-			},
-			want: testLoggerLevelWant{
-				level:    TRACE,
 				exitCode: -1,
 			},
 		},
@@ -882,6 +873,17 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 			},
 			want: testLoggerLevelWant{
 				level:    DEBUG,
+				exitCode: -1,
+			},
+		},
+		{
+			name: "Trace",
+			args: testLoggerLevelArgs{
+				fn:  l.Trace,
+				fnf: l.Tracef,
+			},
+			want: testLoggerLevelWant{
+				level:    TRACE,
 				exitCode: -1,
 			},
 		},

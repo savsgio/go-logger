@@ -184,14 +184,6 @@ func (l *Logger) Printf(msg string, args ...interface{}) {
 	l.encodeOutput(PRINT, msg, args)
 }
 
-func (l *Logger) Trace(msg ...interface{}) {
-	l.encodeOutput(TRACE, "", msg)
-}
-
-func (l *Logger) Tracef(msg string, args ...interface{}) {
-	l.encodeOutput(TRACE, msg, args)
-}
-
 func (l *Logger) Panic(msg ...interface{}) {
 	l.encodeOutput(PANIC, "", msg)
 	panic(l)
@@ -242,4 +234,12 @@ func (l *Logger) Debug(msg ...interface{}) {
 
 func (l *Logger) Debugf(msg string, args ...interface{}) {
 	l.encodeOutput(DEBUG, msg, args)
+}
+
+func (l *Logger) Trace(msg ...interface{}) {
+	l.encodeOutput(TRACE, "", msg)
+}
+
+func (l *Logger) Tracef(msg string, args ...interface{}) {
+	l.encodeOutput(TRACE, msg, args)
 }

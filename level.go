@@ -9,8 +9,6 @@ func ParseLevel(levelStr string) (level Level, err error) {
 	switch strings.ToUpper(levelStr) {
 	case printLevelStr:
 		level = PRINT
-	case traceLevelStr:
-		level = TRACE
 	case panicLevelStr:
 		level = PANIC
 	case fatalLevelStr:
@@ -23,6 +21,8 @@ func ParseLevel(levelStr string) (level Level, err error) {
 		level = INFO
 	case debugLevelStr:
 		level = DEBUG
+	case traceLevelStr:
+		level = TRACE
 	default:
 		level = invalid
 		err = ErrInvalidLevel
@@ -36,8 +36,6 @@ func (l Level) String() string {
 	switch l {
 	case PRINT:
 		return printLevelStr
-	case TRACE:
-		return traceLevelStr
 	case PANIC:
 		return panicLevelStr
 	case FATAL:
@@ -50,6 +48,8 @@ func (l Level) String() string {
 		return infoLevelStr
 	case DEBUG:
 		return debugLevelStr
+	case TRACE:
+		return traceLevelStr
 	case invalid:
 		fallthrough
 	default:

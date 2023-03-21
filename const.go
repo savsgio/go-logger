@@ -6,13 +6,13 @@ import "time"
 const (
 	invalid Level = iota - 1
 	PRINT
-	TRACE
 	PANIC
 	FATAL
 	ERROR
 	WARNING
 	INFO
 	DEBUG
+	TRACE
 )
 
 // Logger flags.
@@ -42,13 +42,13 @@ const unknownFile = "???"
 
 const (
 	printLevelStr   = ""
-	traceLevelStr   = "TRACE"
 	panicLevelStr   = "PANIC"
 	fatalLevelStr   = "FATAL"
 	errorLevelStr   = "ERROR"
 	warningLevelStr = "WARNING"
 	infoLevelStr    = "INFO"
 	debugLevelStr   = "DEBUG"
+	traceLevelStr   = "TRACE"
 )
 
 const defaultTextSeparator = " - "
