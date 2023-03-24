@@ -67,6 +67,10 @@ func (enc *EncoderJSON) keys(cfg Config) (keys []string) {
 		keys = append(keys, enc.cfg.FieldMap.FileKey)
 	}
 
+	if cfg.Function {
+		keys = append(keys, enc.cfg.FieldMap.FunctionKey)
+	}
+
 	keys = append(keys, enc.cfg.FieldMap.MessageKey)
 
 	return keys

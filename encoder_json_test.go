@@ -146,6 +146,7 @@ func TestEncoderJSON_keys(t *testing.T) {
 					UTC:       true,
 					Shortfile: true,
 					Longfile:  true,
+					Function:  true,
 				},
 			},
 			want: want{
@@ -154,6 +155,7 @@ func TestEncoderJSON_keys(t *testing.T) {
 					defaultJSONFieldKeyTimestamp,
 					defaultJSONFieldKeyLevel,
 					defaultJSONFieldKeyFile,
+					defaultJSONFieldKeyFunction,
 					defaultJSONFieldKeyMessage,
 				},
 			},
