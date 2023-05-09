@@ -892,6 +892,24 @@ func TestLogger_Levels(t *testing.T) { // nolint:funlen
 	testLoggerLevels(t, l, testCases)
 }
 
+func BenchmarkLogger_encodeOutput(b *testing.B) { // nolint:funlen
+	l := newTestLogger()
+
+	b.Run("lineal", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			l.encodeOutput(DEBUG, "hello world", nil)
+		}
+	})
+
+	b.Run("parallel", func(b *testing.B) {
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				l.encodeOutput(DEBUG, "hello world", nil)
+			}
+		})
+	})
+}
+
 func BenchmarkLogger_Levels(b *testing.B) { // nolint:funlen
 	l := newTestLogger()
 	l.SetEncoder(newTestEncoderJSON())

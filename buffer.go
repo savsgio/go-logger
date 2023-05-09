@@ -60,8 +60,9 @@ func (b *Buffer) writeEscapedBytes(value []byte) {
 }
 
 func (b *Buffer) formatMessage(msg string, args []interface{}) string {
+	b.b2.Reset()
+
 	lenArgs := len(args)
-	startAt := b.b2.Len()
 
 	switch {
 	case lenArgs == 0:
@@ -72,7 +73,7 @@ func (b *Buffer) formatMessage(msg string, args []interface{}) string {
 		if strValue, ok := args[0].(string); ok {
 			b.b2.WriteString(strValue) // nolint:errcheck
 
-			return gstrconv.B2S(b.b2.Bytes()[startAt:])
+			return b.b2.String()
 		}
 
 		fallthrough
@@ -80,7 +81,7 @@ func (b *Buffer) formatMessage(msg string, args []interface{}) string {
 		fmt.Fprint(&b.b2, args...)
 	}
 
-	return gstrconv.B2S(b.b2.Bytes()[startAt:])
+	return b.b2.String()
 }
 
 // Reset clears the buffer.
