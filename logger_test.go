@@ -106,7 +106,7 @@ func TestLogger_encodeOutput(t *testing.T) { // nolint:funlen
 	var wantResult string
 
 	enc := new(mockEncoder)
-	enc.configure = func(cfg Config) {}
+	enc.configure = func(_ Config) {}
 	enc.encode = func(buf *Buffer, e Entry) error {
 		t.Helper()
 
@@ -167,7 +167,7 @@ func TestLogger_encodeOutput(t *testing.T) { // nolint:funlen
 	hookFired := false
 	hook := &testHook{
 		levels: []Level{level},
-		fireFunc: func(e Entry) error {
+		fireFunc: func(_ Entry) error {
 			hookFired = true
 
 			return nil
@@ -652,7 +652,7 @@ func testLoggerAddHook(t *testing.T, l *Logger, addHookFunc func(h Hook) error) 
 			args: args{
 				hook: &testHook{
 					levels:   levels,
-					fireFunc: func(e Entry) error { return nil },
+					fireFunc: func(_ Entry) error { return nil },
 				},
 			},
 			want: want{
@@ -706,8 +706,8 @@ func testLoggerLevels(t *testing.T, l *Logger, testCases []testLoggerLevelCase) 
 	}
 
 	enc := new(mockEncoder)
-	enc.configure = func(c Config) {}
-	enc.encode = func(b *Buffer, e Entry) error {
+	enc.configure = func(_ Config) {}
+	enc.encode = func(_ *Buffer, e Entry) error {
 		entry = e
 
 		return nil
@@ -773,6 +773,7 @@ func testLoggerLevels(t *testing.T, l *Logger, testCases []testLoggerLevelCase) 
 
 		t.Run(test.name, func(t *testing.T) {
 			t.Helper()
+
 			defer assertPanic(test.want)
 
 			msg := ""
@@ -784,6 +785,7 @@ func testLoggerLevels(t *testing.T, l *Logger, testCases []testLoggerLevelCase) 
 
 		t.Run(test.name+"f", func(t *testing.T) {
 			t.Helper()
+
 			defer assertPanic(test.want)
 
 			msg := "Hello %s"
@@ -918,7 +920,7 @@ func BenchmarkLogger_Levels(b *testing.B) { // nolint:funlen
 	l.SetLevel(DEBUG)
 	// l.SetFlags(0)
 
-	l.exit = func(code int) {}
+	l.exit = func(_ int) {}
 
 	benchs := []struct {
 		name string

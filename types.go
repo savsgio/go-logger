@@ -83,7 +83,7 @@ type Hook interface {
 	// Fire is hook function.
 	//
 	// NOTE: The returned error will be written to `os.Stderr`.
-	Fire(Entry) error
+	Fire(e Entry) error
 }
 
 // Encoder represents the encoders contract.
@@ -92,7 +92,7 @@ type Encoder interface {
 	FieldsEncoded() string
 	SetFieldsEncoded(fieldsEncoded string)
 	Configure(cfg Config)
-	Encode(*Buffer, Entry) error
+	Encode(b *Buffer, e Entry) error
 }
 
 // EncoderBase is the base of encoders.

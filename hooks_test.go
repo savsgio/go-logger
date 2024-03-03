@@ -232,6 +232,7 @@ func TestLevelHooks_fire(t *testing.T) { // nolint:funlen
 
 				hookFired = false
 				hookEntry = Entry{}
+
 				errOutput.Reset()
 			})
 		}
