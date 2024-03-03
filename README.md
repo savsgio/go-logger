@@ -16,7 +16,8 @@ go get github.com/savsgio/go-logger/v4
 
 ## Supported Go versions:
 
-- 1.21.x
+- 1.22.x
+- 1.21.x,
 - 1.20.x
 - 1.19.x
 - 1.18.x
