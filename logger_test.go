@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -33,7 +32,7 @@ type testLoggerLevelCase struct {
 func newTestLogger() *Logger {
 	cfg := newTestConfig()
 
-	l := New(TRACE, ioutil.Discard, cfg.Fields...)
+	l := New(TRACE, io.Discard, cfg.Fields...)
 	l.setCalldepth(cfg.calldepth)
 	l.SetFlags(cfg.flag)
 
