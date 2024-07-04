@@ -1,42 +1,90 @@
 package logger
 
 import (
+	"sync"
 	"testing"
 )
 
+var stdLock = sync.Mutex{}
+
+func acquireStd() {
+	stdLock.Lock()
+}
+
+func releaseStd() {
+	std = newStd()
+	stdLock.Unlock()
+}
+
 func TestLogger_std_WithFields(t *testing.T) {
+	acquireStd()
+
+	defer releaseStd()
+
 	testLoggerWithFields(t, std, WithFields)
 }
 
 func TestLogger_std_SetFields(t *testing.T) {
+	acquireStd()
+
+	defer releaseStd()
+
 	testLoggerSetFields(t, std, SetFields)
 }
 
 func TestLogger_std_SetFlags(t *testing.T) {
+	acquireStd()
+
+	defer releaseStd()
+
 	testLoggerSetFlags(t, std, SetFlags)
 }
 
 func TestLogger_std_SetLevel(t *testing.T) {
+	acquireStd()
+
+	defer releaseStd()
+
 	testLoggerSetLevel(t, std, SetLevel)
 }
 
 func TestLogger_std_SetOutput(t *testing.T) {
+	acquireStd()
+
+	defer releaseStd()
+
 	testLoggerSetOutput(t, std, SetOutput)
 }
 
 func TestLogger_std_SetEncoder(t *testing.T) {
+	acquireStd()
+
+	defer releaseStd()
+
 	testLoggerSetEncoder(t, std, SetEncoder)
 }
 
 func TestLogger_std_IsLevelEnabled(t *testing.T) {
+	acquireStd()
+
+	defer releaseStd()
+
 	testLoggerIsLevelEnabled(t, std, IsLevelEnabled)
 }
 
 func TestLogger_std_AddHook(t *testing.T) {
+	acquireStd()
+
+	defer releaseStd()
+
 	testLoggerAddHook(t, std, AddHook)
 }
 
 func TestLogger_std_Levels(t *testing.T) { // nolint:funlen
+	acquireStd()
+
+	defer releaseStd()
+
 	std = newTestLogger()
 	std.setCalldepth(calldepthStd)
 
